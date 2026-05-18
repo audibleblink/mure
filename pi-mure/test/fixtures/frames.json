@@ -1,0 +1,11 @@
+{
+  "hello_agent": {"v":1,"event":"hello","role":"agent","agent_id":"agent-3","pane_id":"%41","pid":12345,"pi_version":"0.50.3","ts":1731890000000},
+  "status": {"v":1,"event":"status","agent_id":"agent-3","status":"working","task":"refactor auth","tool":"bash","ts":1731890001234},
+  "bye": {"v":1,"event":"bye","agent_id":"agent-3","ts":1731890003000},
+  "hello_hook": {"v":1,"event":"hello","role":"hook"},
+  "focus_hook": {"v":1,"event":"focus","pane_id":"%41","client":"main","ts":1731890004000},
+  "pane_died": {"v":1,"event":"pane_died","pane_id":"%41"},
+  "session_closed": {"v":1,"event":"session_closed","session":"mure-project-x"},
+  "roster": {"v":1,"event":"roster","agents":[{"id":"agent-3","status":"idle","pane":"%43"}]},
+  "agent_update": {"v":1,"event":"agent_update","agent":{"id":"agent-3","status":"idle","task":"…","pane":"%43","last_turn_ended_at":1731890003000}}
+}

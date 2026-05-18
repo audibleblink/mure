@@ -201,7 +201,7 @@ The daemon installs no hooks, sets no global options, writes no key bindings. It
 | Verb | Description |
 |---|---|
 | `mure up` | Start daemon; open control-mode clients. Re-entrant. Warns if `tmux-mure` plugin not detected. |
-| `mure spawn <role> [task]` | Open a new pane via `tmux split-window` (target read from `@mure-spawn-target`; default `right-of-active`) and exec `$MURE_AGENT_CMD` (default `pi`). Sets `MURE_ENV=1`, `MURE_AGENT_ID`, `MURE_SOCKET`, and `@mure-role`, `@mure-spawned-at` on the new pane. |
+| `mure spawn <role> [task]` | Open a new pane via `tmux split-window` (target read from `@mure-spawn-target`; default `subagents-window`) and exec `$MURE_AGENT_CMD` (default `pi`). Sets `MURE_ENV=1`, `MURE_AGENT_ID`, `MURE_SOCKET`, and `@mure-role`, `@mure-spawned-at` on the new pane. |
 | `mure ls` | Human-readable table. `--json` for machine output. |
 | `mure focus <agent>` | Exec `tmux select-pane`. |
 | `mure down` | Stop daemon, unlink socket. tmux panes persist. |
@@ -246,7 +246,7 @@ The daemon installs no hooks, sets no global options, writes no key bindings. It
 | `@mure-sidebar-width` | `36` | Sidebar pane width. |
 | `@mure-sidebar-position` | `left` | `left` \| `right`. |
 | `@mure-sidebar-key` | `M` | Prefix-key for sidebar toggle. |
-| `@mure-spawn-target` | `right-of-active` | `right-of-active` \| `below-active` \| `new-window`. |
+| `@mure-spawn-target` | `subagents-window` | `subagents-window` \| `right-of-active` \| `below-active` \| `new-window`. Unknown values warn and fall back to `subagents-window`. |
 | `@mure-color-{working,blocked,errored,disconnected,idle}` | (see plugin) | Pane border colors. |
 | `@mure-status-format` | (see plugin) | Status-line format snippet. |
 | `@mure-plugin-version` | `1` | Set by plugin; checked by `mure doctor`. |
@@ -384,7 +384,7 @@ Script logic:
 
 ### 11.5 Spawn-target policy
 
-`mure spawn` reads `@mure-spawn-target` via `tmux show-option -gv`. If unset (plugin not installed), defaults to `right-of-active`.
+`mure spawn` reads `@mure-spawn-target` via `tmux show-option -gv`. If unset (plugin not installed), defaults to `subagents-window`.
 
 ### 11.6 Installation
 

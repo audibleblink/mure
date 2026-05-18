@@ -1,0 +1,7 @@
+bin/
+*.test
+coverage.out
+.pi/
+node_modules
+/stubagent
+dist/

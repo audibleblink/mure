@@ -1,0 +1,17 @@
+{
+  "name": "@mure/pi-extension",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "pi extension emitting mure agent state",
+  "main": "index.ts",
+  "scripts": {
+    "test": "node --import tsx --test test/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.10",
+    "tsx": "^4.19.2",
+    "typebox": "^1.1.38",
+    "typescript": "^5.6.3"
+  }
+}

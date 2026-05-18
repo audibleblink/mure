@@ -1,0 +1,64 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pi-mure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: cd pi-mure && npm install
+      - run: cd pi-mure && npm test
+
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+      - name: install tmux + shellcheck (linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y tmux shellcheck
+      - name: install tmux + shellcheck (macos)
+        if: runner.os == 'macOS'
+        run: brew install tmux shellcheck
+      - name: verify pi-extension sync is committed
+        run: |
+          make sync-piext
+          git diff --exit-code internal/piext/assets/
+      - run: make verify
+      - name: mure doctor (post-install smoke)
+        run: ./bin/mure doctor
+
+  e2e:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+      - name: install tmux (linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y tmux
+      - name: install tmux (macos)
+        if: runner.os == 'macOS'
+        run: brew install tmux
+      - run: make verify
+      - run: go test -tags=e2e -count=1 ./test/...
