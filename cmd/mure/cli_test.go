@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -123,61 +122,6 @@ func TestDownSendsShutdown(t *testing.T) {
 		time.Sleep(10 * time.Millisecond)
 	}
 	t.Fatalf("socket not unlinked: %s", sockPath)
-}
-
-func TestHookFocusSendsOneFrame(t *testing.T) {
-	sockPath, roster := startInProcessDaemon(t)
-
-	// Pre-seed an agent so pane_died testing is also possible.
-	roster.UpsertFromHello(sock.Hello{V: 1, Event: "hello", Role: sock.RoleAgent, AgentID: "a1", PaneID: "%41"})
-	time.Sleep(20 * time.Millisecond)
-
-	// Subscribe a sidebar to observe the lack/presence of frames.
-	sb, err := net.Dial("unix", sockPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer sb.Close()
-	if err := sock.WriteFrame(sb, sock.Hello{V: 1, Event: "hello", Role: sock.RoleSidebar}); err != nil {
-		t.Fatal(err)
-	}
-	sbr := bufio.NewReader(sb)
-	// drain initial roster
-	if _, err := sock.ReadFrame(sbr, sock.MaxFrameSize); err != nil {
-		t.Fatal(err)
-	}
-
-	t.Setenv("MURE_SOCKET", sockPath)
-	exit, _, _ := captureRun(t, []string{"_hook", "focus", "%41", "main"})
-	if exit != 0 {
-		t.Fatalf("hook focus exit=%d", exit)
-	}
-
-	// Now test pane_died removes the agent (observable to sidebar).
-	exit, _, _ = captureRun(t, []string{"_hook", "pane_died", "%41"})
-	if exit != 0 {
-		t.Fatalf("hook pane_died exit=%d", exit)
-	}
-	gotDeleted := false
-	deadline := time.Now().Add(time.Second)
-	for time.Now().Before(deadline) {
-		_ = sb.SetReadDeadline(time.Now().Add(200 * time.Millisecond))
-		line, err := sock.ReadFrame(sbr, sock.MaxFrameSize)
-		if err != nil {
-			continue
-		}
-		var upd sock.AgentUpdate
-		if json.Unmarshal(line, &upd) != nil {
-			continue
-		}
-		if upd.Deleted {
-			gotDeleted = true
-			break
-		}
-	}
-	if !gotDeleted {
-		t.Fatal("did not see deletion update after pane_died hook")
-	}
 }
 
 func TestDoctorNoTmuxFails(t *testing.T) {

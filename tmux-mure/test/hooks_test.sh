@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Integration test for tmux-mure.
 # - Sources the plugin into an isolated tmux server.
-# - Asserts the three hooks are registered.
 # - Asserts sidebar-toggle creates a pane with @mure-is-sidebar=1,
 #   then destroys it on the second invocation.
 #
@@ -46,15 +45,6 @@ tmux_cmd run-shell "$PLUGIN_DIR/tmux-mure.tmux"
 ver=$(tmux_cmd show-option -gv @mure-plugin-version)
 [ "$ver" = "1" ] || fail "@mure-plugin-version=$ver (want 1)"
 
-# --- Assert hooks registered ---
-for h in after-select-pane pane-exited session-closed; do
-    body=$(tmux_cmd show-hooks -g "$h" 2>/dev/null || true)
-    case "$body" in
-        *"mure _hook"*) ;;
-        *) fail "hook $h not registered (body=$body)" ;;
-    esac
-done
-
 # --- Sidebar toggle: create ---
 tmux_cmd run-shell "$PLUGIN_DIR/scripts/sidebar-toggle.sh"
 # Give the new pane a moment to register.
@@ -71,14 +61,5 @@ sleep 0.3
 leftover=$(tmux_cmd list-panes -s -t test \
     -F '#{pane_id} #{@mure-is-sidebar}' | awk '$2=="1"{print $1}')
 [ -z "$leftover" ] || fail "sidebar pane $leftover survived second toggle"
-
-# --- uninstall-hooks ---
-tmux_cmd run-shell "$PLUGIN_DIR/scripts/uninstall-hooks.sh"
-for h in after-select-pane pane-exited session-closed; do
-    body=$(tmux_cmd show-hooks -g "$h" 2>/dev/null || true)
-    case "$body" in
-        *"mure _hook"*) fail "hook $h still present after uninstall (body=$body)" ;;
-    esac
-done
 
 echo "ok tmux-mure hooks_test"

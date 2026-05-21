@@ -7,34 +7,31 @@ const ProtocolVersion = 1
 // MaxFrameSize is the maximum NDJSON line length in bytes (PRD §12).
 const MaxFrameSize = 64 * 1024
 
-// Status vocabulary (PRD §12.5).
+// Status vocabulary.
 const (
-	StatusIdle         = "idle"
-	StatusWorking      = "working"
-	StatusBlocked      = "blocked"
-	StatusDisconnected = "disconnected"
-	StatusErrored      = "errored"
+	StatusIdle    = "idle"
+	StatusWorking = "working"
+	StatusBlocked = "blocked"
 )
 
 // ValidStatus reports whether s is a known status string.
 func ValidStatus(s string) bool {
 	switch s {
-	case StatusIdle, StatusWorking, StatusBlocked, StatusDisconnected, StatusErrored:
+	case StatusIdle, StatusWorking, StatusBlocked:
 		return true
 	}
 	return false
 }
 
-// Connection roles (first-frame hello.role, PRD §12).
+// Connection roles (first-frame hello.role).
 const (
 	RoleAgent   = "agent"
 	RoleSidebar = "sidebar"
 	RoleCLI     = "cli"
-	RoleHook    = "hook"
 )
 
 // Hello is the first frame sent by every connection.
-// Agent connections populate AgentID/PaneID/PID/PiVersion/TS; hook/cli/sidebar
+// Agent connections populate AgentID/PaneID/PID/PiVersion/TS; cli/sidebar
 // connections send only V/Event/Role.
 type Hello struct {
 	V         int    `json:"v"`
@@ -76,37 +73,12 @@ type Result struct {
 	TS      int64  `json:"ts"`
 }
 
-// Wait is a CLI → daemon request to block until agent_id has a result
-// (or transitions to errored). Daemon replies with one AgentUpdate.
+// Wait is a CLI → daemon request to block until agent_id has a result.
+// Daemon replies with one AgentUpdate.
 type Wait struct {
 	V       int    `json:"v"`
 	Event   string `json:"event"`
 	AgentID string `json:"agent_id"`
-}
-
-// Focus carries both hook → daemon (pane focused in tmux) and daemon → agent
-// (this agent's pane gained/lost focus). Field set varies by direction.
-type Focus struct {
-	V       int    `json:"v"`
-	Event   string `json:"event"`
-	PaneID  string `json:"pane_id,omitempty"`
-	Client  string `json:"client,omitempty"`
-	Focused *bool  `json:"focused,omitempty"`
-	TS      int64  `json:"ts,omitempty"`
-}
-
-// PaneDied is a hook → daemon notification that a tmux pane exited.
-type PaneDied struct {
-	V      int    `json:"v"`
-	Event  string `json:"event"`
-	PaneID string `json:"pane_id"`
-}
-
-// SessionClosed is a hook → daemon notification that a tmux session ended.
-type SessionClosed struct {
-	V       int    `json:"v"`
-	Event   string `json:"event"`
-	Session string `json:"session"`
 }
 
 // AgentSnapshot is one entry in a Roster or AgentUpdate frame.

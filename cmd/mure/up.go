@@ -93,19 +93,12 @@ func runDaemon(ctx context.Context, stderr *os.File) int {
 	}
 	cfg := daemon.Config{Session: session, SocketPath: sockPath, RunDir: runDir, LaunchDir: os.Getenv("MURE_LAUNCH_DIR")}
 	if tmuxSock := os.Getenv("MURE_TMUX_SOCKET"); tmuxSock != "" {
-		reader, err := tmuxctl.Dial(ctx, "-S", tmuxSock, "attach", "-t", session)
+		c, err := tmuxctl.Dial(ctx, "-S", tmuxSock, "attach", "-t", session)
 		if err != nil {
-			fmt.Fprintf(stderr, "mure up: tmux reader: %v\n", err)
+			fmt.Fprintf(stderr, "mure up: tmux: %v\n", err)
 			return 1
 		}
-		writer, err := tmuxctl.Dial(ctx, "-S", tmuxSock, "attach", "-t", session)
-		if err != nil {
-			reader.Close()
-			fmt.Fprintf(stderr, "mure up: tmux writer: %v\n", err)
-			return 1
-		}
-		cfg.Reader = reader
-		cfg.Writer = writer
+		cfg.Tmux = c
 	}
 	if err := daemon.Run(ctx, cfg); err != nil && !errors.Is(err, context.Canceled) {
 		fmt.Fprintf(stderr, "mure up: %v\n", err)

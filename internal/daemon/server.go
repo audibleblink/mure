@@ -160,8 +160,6 @@ func (s *Server) handle(ctx context.Context, conn net.Conn) {
 		s.handleAgent(ctx, conn, br, h)
 	case sock.RoleSidebar:
 		s.handleSidebar(ctx, conn, br, h)
-	case sock.RoleHook:
-		s.handleHook(ctx, conn, br, h)
 	case sock.RoleCLI:
 		s.handleCLI(ctx, conn, br, h)
 	default:
@@ -244,35 +242,6 @@ func (s *Server) handleSidebar(ctx context.Context, conn net.Conn, br *bufio.Rea
 	}
 }
 
-func (s *Server) handleHook(ctx context.Context, conn net.Conn, br *bufio.Reader, _ sock.Hello) {
-	// Hook connections fire-and-forget one frame.
-	line, err := sock.ReadFrame(br, sock.MaxFrameSize)
-	if err != nil {
-		return
-	}
-	event, _, err := sock.DecodeEnvelope(line)
-	if err != nil {
-		return
-	}
-	switch event {
-	case "pane_died":
-		var pd sock.PaneDied
-		if json.Unmarshal(line, &pd) != nil {
-			return
-		}
-		// Map pane → agent: Phase 5 owns the index. For now, look up by pane.
-		for _, a := range s.roster.Snapshot().Agents {
-			if a.Pane == pd.PaneID {
-				s.roster.Remove(a.ID)
-			}
-		}
-	case "session_closed":
-		// Phase 5 owns session-level teardown; no-op here.
-	case "focus":
-		// Phase 5 owns focus routing; no-op here.
-	}
-}
-
 func (s *Server) handleCLI(ctx context.Context, conn net.Conn, br *bufio.Reader, _ sock.Hello) {
 	// Always answer the hello with a snapshot so ping-style probes succeed.
 	if err := sock.WriteFrame(conn, s.roster.Snapshot()); err != nil {
@@ -309,11 +278,11 @@ func (s *Server) handleCLI(ctx context.Context, conn net.Conn, br *bufio.Reader,
 	}
 }
 
-// handleWait blocks until the agent identified by w.AgentID has a Result or
-// reaches a terminal state (errored/disconnected), then writes one AgentUpdate.
+// handleWait blocks until the agent identified by w.AgentID has a Result,
+// then writes one AgentUpdate.
 func (s *Server) handleWait(ctx context.Context, conn net.Conn, w sock.Wait) {
 	terminal := func(a sock.AgentSnapshot) bool {
-		return a.Result != "" || a.Status == sock.StatusErrored || a.Status == sock.StatusDisconnected
+		return a.Result != ""
 	}
 	// Subscribe before snapshotting to avoid losing a transition that occurs
 	// between the snapshot read and subscriber registration.

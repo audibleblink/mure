@@ -55,18 +55,12 @@ func loadFixtures(t *testing.T) fixtures {
 // frameType returns a fresh typed struct pointer keyed by event/role.
 func frameType(name string) any {
 	switch name {
-	case "hello_agent", "hello_hook":
+	case "hello_agent":
 		return &sock.Hello{}
 	case "status":
 		return &sock.Status{}
 	case "bye":
 		return &sock.Bye{}
-	case "focus_hook":
-		return &sock.Focus{}
-	case "pane_died":
-		return &sock.PaneDied{}
-	case "session_closed":
-		return &sock.SessionClosed{}
 	case "roster":
 		return &sock.Roster{}
 	case "agent_update":

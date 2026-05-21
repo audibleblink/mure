@@ -3,9 +3,11 @@
 tmux plugin for [mure](https://github.com/<owner>/mure). Pure shell + tmux
 config. Owns the tmux-side surfaces only:
 
-- global hooks (`after-select-pane`, `pane-exited`, `session-closed`) that
-  fork `mure _hook ...` so the daemon can observe focus/death/teardown,
-- prefix-`M` toggle for the `mure sidebar` pane.
+- prefix-`M` toggle for the `mure sidebar` pane,
+- a default `@mure-spawn-target` (read by `mure spawn`).
+
+The plugin installs no tmux hooks: pane death is observed by the daemon
+directly via tmux control mode.
 
 Agent status is intentionally **not** surfaced via tmux options or the
 status line. Status is observable only through `mure ls` and the sidebar
@@ -15,10 +17,10 @@ The plugin spawns no long-lived processes.
 
 ## Prerequisites
 
-- tmux >= 3.2 (required for `set-hook -gu`).
+- tmux >= 3.2.
 - The `mure` binary must be on the `PATH` of whatever shell tmux's
-  `run-shell` inherits (typically your login shell). All hooks and the
-  sidebar toggle short-circuit with a message if `mure` is not found.
+  `run-shell` inherits (typically your login shell). The sidebar toggle
+  short-circuits with a message if `mure` is not found.
 
 ## Install from a local directory
 
@@ -51,37 +53,20 @@ example overrides.
 
 ## Uninstall
 
-In all cases, first remove the hooks and key bind from the running tmux
-server, then reload your config.
-
 ### TPM install
 
-1. Remove the `set -g @plugin '<owner>/tmux-mure'` line from your
-   `~/.tmux.conf`.
-2. Run the uninstall script to clear hooks from the running server:
-   ```sh
-   ~/.tmux/plugins/tmux-mure/scripts/uninstall-hooks.sh
-   ```
-3. In tmux, press `prefix + alt-u` (TPM's clean) to remove the plugin
-   directory.
-4. Reload your config:
-   ```sh
-   tmux source-file ~/.tmux.conf
-   ```
+1. Remove the `set -g @plugin '<owner>/tmux-mure'` line from your `~/.tmux.conf`.
+2. `prefix + alt-u` (TPM's clean) to remove the plugin directory.
+3. `tmux source-file ~/.tmux.conf`.
 
 ### Local-clone install
 
-1. Remove the `run-shell /path/to/tmux-mure/tmux-mure.tmux` line from your
-   `~/.tmux.conf`.
-2. Run the uninstall script from your checkout:
-   ```sh
-   /path/to/mure/tmux-mure/scripts/uninstall-hooks.sh
-   ```
-3. Reload your config:
-   ```sh
-   tmux source-file ~/.tmux.conf
-   ```
-4. Delete the checkout if no longer needed.
+1. Remove the `run-shell /path/to/tmux-mure/tmux-mure.tmux` line.
+2. `tmux source-file ~/.tmux.conf`. Delete the checkout if no longer needed.
+
+If you previously ran a hooks-installing version of the plugin, also run
+`scripts/uninstall-hooks.sh` once to clear the global hooks from the
+running server.
 
 ## Options
 

@@ -328,7 +328,7 @@ func (m Model) View() string {
 	countLine := []string{pad(dim.Render(runeTrunc(fmt.Sprintf("%d agents", len(m.agents)), inner)), inner)}
 	var disc []string
 	if !m.connected {
-		disc = []string{pad(fg(m.palette.Errored).Render(runeTrunc("(disconnected)", inner)), inner)}
+		disc = []string{pad(fg(m.palette.AccentA).Render(runeTrunc("(disconnected)", inner)), inner)}
 	}
 	divLine := pad(fg(m.palette.Divider).Render(strings.Repeat("─", inner)), inner)
 	topDiv := []string{divLine}
@@ -464,9 +464,6 @@ func (m Model) renderAgentRowTall(a sock.AgentSnapshot, selected bool, now time.
 		g = string(spinnerFrames[int(m.tick%uint64(len(spinnerFrames)))])
 	}
 	label := a.Status
-	if a.Status == sock.StatusDisconnected {
-		label = "discon."
-	}
 	name := a.ID
 	if a.Role != "" {
 		name = a.Role
@@ -697,10 +694,6 @@ func glyph(status string, lastEndedAt int64, now time.Time) string {
 		return "●"
 	case sock.StatusBlocked:
 		return "◐"
-	case sock.StatusErrored:
-		return "⚠"
-	case sock.StatusDisconnected:
-		return "⋯"
 	case sock.StatusIdle:
 		if lastEndedAt > 0 && now.Sub(time.Unix(lastEndedAt, 0)) < 5*time.Minute {
 			return "✓"
@@ -717,9 +710,6 @@ func (m Model) renderAgentRow(a sock.AgentSnapshot, selected bool, now time.Time
 		g = string(spinnerFrames[int(m.tick%uint64(len(spinnerFrames)))])
 	}
 	label := a.Status
-	if a.Status == sock.StatusDisconnected {
-		label = "discon."
-	}
 	elapsed := "—"
 	var age time.Duration
 	if a.LastTurnEndedAt > 0 {
@@ -784,10 +774,6 @@ func (m Model) statusColor(s string) lipgloss.AdaptiveColor {
 		return m.palette.Working
 	case sock.StatusBlocked:
 		return m.palette.Blocked
-	case sock.StatusErrored:
-		return m.palette.Errored
-	case sock.StatusDisconnected:
-		return m.palette.Disconnected
 	case sock.StatusIdle:
 		return m.palette.Idle
 	}

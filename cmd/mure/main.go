@@ -21,7 +21,6 @@ var verbs = map[string]verbFunc{
 	"sidebar":     cmdSidebar,
 	"doctor":      cmdDoctor,
 	"integration": cmdIntegration,
-	"_hook":       cmdHook,
 }
 
 func main() {

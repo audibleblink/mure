@@ -6,7 +6,7 @@
 
 `mure` is a tmux-native multiplexer for coding-agent panes. It watches every
 agent you spawn and surfaces their live status — *working*, *blocked*,
-*errored*, *idle* — visible via an optional sidebar with the full roster. 
+*idle* — visible via `mure ls` and an optional sidebar with the full roster.
 
 No web UI, no separate window manager, no new keybindings to learn.
 

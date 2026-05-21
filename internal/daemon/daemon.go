@@ -14,13 +14,11 @@ type Config struct {
 	SocketPath string
 	RunDir     string
 	LaunchDir  string // cwd of the process that ran `mure up`
-	Reader     tmuxctl.Client
-	Writer     tmuxctl.Client
+	Tmux       tmuxctl.Client
 }
 
-// Run wires the daemon's subsystems together: logger, roster, coalescer,
-// debouncer, tmux bridge, and Unix-socket server. Returns when ctx is
-// cancelled or the listener errors.
+// Run wires the daemon's subsystems together: logger, roster, tmux bridge,
+// and Unix-socket server. Returns when ctx is cancelled or the listener errors.
 func Run(ctx context.Context, cfg Config) error {
 	if cfg.Session == "" || cfg.SocketPath == "" || cfg.RunDir == "" {
 		return fmt.Errorf("daemon: Config requires Session, SocketPath, RunDir")
@@ -38,14 +36,9 @@ func Run(ctx context.Context, cfg Config) error {
 	if cfg.LaunchDir != "" {
 		roster.SetLaunchDir(cfg.LaunchDir)
 	}
-	deb := NewDebouncer(DefaultDebounceWindow,
-		func(id string) { roster.Remove(id) },
-		func(id string) { roster.MarkDisconnected(id, 0) },
-	)
-	defer deb.Stop()
 
-	if cfg.Reader != nil && cfg.Writer != nil {
-		bridge := NewBridge(cfg.Reader, cfg.Writer, roster, deb, cfg.Session)
+	if cfg.Tmux != nil {
+		bridge := NewBridge(cfg.Tmux, roster, cfg.Session)
 		if err := bridge.SetupSession(ctx, cfg.RunDir, cfg.SocketPath); err != nil {
 			l.Printf("setup-session: %v", err)
 			return err

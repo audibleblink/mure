@@ -307,8 +307,7 @@ func TestSpinner_NoTicksWhenNoWorking(t *testing.T) {
 	m.applyFrame(Frame{Roster: &sock.Roster{V: 1, Event: "roster", Agents: []sock.AgentSnapshot{
 		{ID: "a", Status: sock.StatusIdle},
 		{ID: "b", Status: sock.StatusBlocked},
-		{ID: "c", Status: sock.StatusErrored},
-		{ID: "d", Status: sock.StatusDisconnected},
+
 	}}})
 	_ = m.Init()
 	if *called {
@@ -408,14 +407,14 @@ func TestView_DisconnectedIndicatorColor(t *testing.T) {
 	if discLine == "" {
 		t.Fatalf("(disconnected) line not found")
 	}
-	wantHex := m.palette.Errored.Dark
+	wantHex := m.palette.AccentA.Dark
 	if !m.dark {
-		wantHex = m.palette.Errored.Light
+		wantHex = m.palette.AccentA.Light
 	}
 	wantR, wantG, wantB := parseHex(wantHex)
 	wantFrag := fmt.Sprintf("38;2;%d;%d;%d", wantR, wantG, wantB)
 	if !strings.Contains(discLine, wantFrag) {
-		t.Errorf("disconnected line missing Errored fg %q in %q", wantFrag, discLine)
+		t.Errorf("disconnected line missing AccentA fg %q in %q", wantFrag, discLine)
 	}
 }
 
