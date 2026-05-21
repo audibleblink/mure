@@ -161,12 +161,12 @@ func TestPickSpawnTarget_SubagentsWindow_MarkerPresent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	want := []string{"split-window", "-t", "@7", "-P", "-F", "#{pane_id}", "PL"}
+	want := []string{"split-window", "-h", "-t", "@7", "-P", "-F", "#{pane_id}", "PL"}
 	if !reflect.DeepEqual(plan.Argv, want) {
 		t.Errorf("Argv = %v, want %v", plan.Argv, want)
 	}
-	if plan.PostCreate != nil {
-		t.Errorf("PostCreate should be nil")
+	if plan.PostCreate == nil {
+		t.Errorf("PostCreate should rebalance layout")
 	}
 }
 
@@ -180,7 +180,7 @@ func TestPickSpawnTarget_SubagentsWindow_NameOnly(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	want := []string{"split-window", "-t", "@5", "-P", "-F", "#{pane_id}", "PL"}
+	want := []string{"split-window", "-h", "-t", "@5", "-P", "-F", "#{pane_id}", "PL"}
 	if !reflect.DeepEqual(plan.Argv, want) {
 		t.Errorf("Argv = %v, want %v", plan.Argv, want)
 	}
@@ -196,7 +196,7 @@ func TestPickSpawnTarget_SubagentsWindow_MarkerBeatsName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	want := []string{"split-window", "-t", "@8", "-P", "-F", "#{pane_id}", "PL"}
+	want := []string{"split-window", "-h", "-t", "@8", "-P", "-F", "#{pane_id}", "PL"}
 	if !reflect.DeepEqual(plan.Argv, want) {
 		t.Errorf("Argv = %v, want %v", plan.Argv, want)
 	}
@@ -212,7 +212,7 @@ func TestPickSpawnTarget_UnknownTarget(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	want := []string{"split-window", "-t", "@7", "-P", "-F", "#{pane_id}", "PL"}
+	want := []string{"split-window", "-h", "-t", "@7", "-P", "-F", "#{pane_id}", "PL"}
 	if !reflect.DeepEqual(plan.Argv, want) {
 		t.Errorf("Argv = %v, want %v", plan.Argv, want)
 	}

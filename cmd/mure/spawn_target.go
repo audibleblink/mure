@@ -48,7 +48,13 @@ func planSubagentsWindow(run tmuxRunner, payload string) (spawnTargetPlan, error
 		return spawnTargetPlan{}, err
 	}
 	if found {
-		return spawnTargetPlan{Argv: []string{"split-window", "-t", windowID, "-P", "-F", "#{pane_id}", payload}}, nil
+		return spawnTargetPlan{
+			Argv: []string{"split-window", "-h", "-t", windowID, "-P", "-F", "#{pane_id}", payload},
+			PostCreate: func(paneID string) error {
+				_, err := run("select-layout", "-t", windowID, "even-horizontal")
+				return err
+			},
+		}, nil
 	}
 	return spawnTargetPlan{
 		Argv: []string{"new-window", "-d", "-t", sessionID, "-n", "subagents", "-P", "-F", "#{pane_id}", payload},
