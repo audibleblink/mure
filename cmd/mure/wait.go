@@ -51,9 +51,6 @@ func cmdWait(ctx context.Context, argv []string, stdout, stderr *os.File) int {
 		fmt.Fprintf(stderr, "mure wait: decode: %v\n", err)
 		return 1
 	}
-	if upd.Agent.Degraded {
-		fmt.Fprintln(stderr, "mure wait: result is degraded (capture-pane fallback)")
-	}
 	if upd.Agent.Result != "" {
 		fmt.Fprintln(stdout, upd.Agent.Result)
 		return 0

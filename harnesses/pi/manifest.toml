@@ -14,22 +14,22 @@ subtools = true
 path = "~/.pi/agent/skills/mure/SKILL.md"
 merge = "replace"
 
-[[install.hooks]]
+[[install.files]]
 src = "hooks/on-tool-start.sh"
 dst = "~/.pi/agent/hooks/mure/on-tool-start.sh"
 mode = "0755"
 
-[[install.hooks]]
+[[install.files]]
 src = "hooks/on-tool-end.sh"
 dst = "~/.pi/agent/hooks/mure/on-tool-end.sh"
 mode = "0755"
 
-[[install.hooks]]
+[[install.files]]
 src = "hooks/on-turn-end.sh"
 dst = "~/.pi/agent/hooks/mure/on-turn-end.sh"
 mode = "0755"
 
-[[install.hooks]]
+[[install.files]]
 src = "hooks/on-blocked.sh"
 dst = "~/.pi/agent/hooks/mure/on-blocked.sh"
 mode = "0755"

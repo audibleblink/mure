@@ -21,7 +21,7 @@ func TestInstallUninstall_RoundTrip(t *testing.T) {
 		Name: "demo", Command: "demo",
 		Install: Install{
 			Skill: Skill{Path: "~/skill.md", Merge: "append"},
-			Hooks: []Hook{{Src: "h.sh", Dst: "~/h.sh", Mode: "0755"}},
+			Files: []File{{Src: "h.sh", Dst: "~/h.sh", Mode: "0755"}},
 		},
 	}
 	fs := fstest.MapFS{
@@ -64,7 +64,7 @@ func TestUninstall_ModifiedReplaceFile_IsWarned(t *testing.T) {
 	t.Setenv("HOME", tmp)
 	m := Manifest{
 		Name: "demo", Command: "demo",
-		Install: Install{Hooks: []Hook{{Src: "h.sh", Dst: "~/h.sh", Mode: "0644"}}},
+		Install: Install{Files: []File{{Src: "h.sh", Dst: "~/h.sh", Mode: "0644"}}},
 	}
 	fs := fstest.MapFS{"demo/h.sh": {Data: []byte("orig")}}
 	ops, _ := BuildPlan(m, fs)

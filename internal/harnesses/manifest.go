@@ -27,7 +27,7 @@ type Capabilities struct {
 
 type Install struct {
 	Skill Skill  `toml:"skill"`
-	Hooks []Hook `toml:"hooks"`
+	Files []File `toml:"files"`
 }
 
 type Skill struct {
@@ -35,7 +35,10 @@ type Skill struct {
 	Merge string `toml:"merge"`
 }
 
-type Hook struct {
+// File is a single embedded-source → on-disk destination copy operation.
+// Used for hook scripts, plugins, or any other file a harness needs to
+// drop into its agent's config tree at install time.
+type File struct {
 	Src  string `toml:"src"`
 	Dst  string `toml:"dst"`
 	Mode string `toml:"mode"`

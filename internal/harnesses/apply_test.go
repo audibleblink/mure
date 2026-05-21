@@ -15,7 +15,7 @@ func sampleManifest(t *testing.T, tmp string) (Manifest, fstest.MapFS) {
 		Command: "demo",
 		Install: Install{
 			Skill: Skill{Path: "~/.config/demo/skill.md", Merge: "append"},
-			Hooks: []Hook{
+			Files: []File{
 				{Src: "hooks/start.sh", Dst: "~/.config/demo/hooks/start.sh", Mode: "0755"},
 				{Src: "data.txt", Dst: "~/.config/demo/data.txt", Mode: "0644"},
 			},

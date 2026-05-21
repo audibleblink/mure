@@ -21,7 +21,7 @@ func setupTestHarness(t *testing.T) {
 		"demo/manifest.toml": {Data: []byte("name = \"demo\"\ndisplay = \"Demo\"\ncommand = \"demo\"\n" +
 			"[capabilities]\nspawn = true\nstatus = true\nresult = true\n" +
 			"[install.skill]\npath = \"~/skill.md\"\nmerge = \"append\"\n" +
-			"[[install.hooks]]\nsrc = \"h.sh\"\ndst = \"~/h.sh\"\nmode = \"0755\"\n")},
+			"[[install.files]]\nsrc = \"h.sh\"\ndst = \"~/h.sh\"\nmode = \"0755\"\n")},
 		"demo/skill.md": {Data: []byte("body")},
 		"demo/h.sh":     {Data: []byte("#!/bin/sh\n")},
 	})

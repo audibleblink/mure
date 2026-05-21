@@ -5,16 +5,20 @@ command = "opencode"
 # Top-level TUI accepts the initial message via --prompt (see `opencode --help`).
 task_arg = "flag:--prompt"
 
-# opencode's lifecycle events are only reachable via the plugin system
-# (TS/JS modules under ~/.config/opencode/plugins). Until a packaged
-# mure-opencode plugin ships, status/result are best-effort and the daemon
-# falls back to capture-pane sampling (Phase 4 fallback).
+# Status & result are delivered by a local opencode plugin (TS file) that
+# subscribes to tool.execute.before / tool.execute.after / session.idle and
+# writes NDJSON frames directly to $MURE_SOCKET. See plugins/mure.ts.
 [capabilities]
 spawn = true
-status = false
-result = false
+status = true
+result = true
 subtools = true
 
 [install.skill]
 path = "~/.config/opencode/AGENTS.md"
 merge = "append"
+
+[[install.files]]
+src  = "plugins/mure.ts"
+dst  = "~/.config/opencode/plugins/mure.ts"
+mode = "0644"

@@ -15,17 +15,17 @@ subtools = true
 path = "~/.claude/CLAUDE.md"
 merge = "append"
 
-[[install.hooks]]
+[[install.files]]
 src = "hooks/pre-tool-use.sh"
 dst = "~/.claude/hooks/mure-pre-tool-use.sh"
 mode = "0755"
 
-[[install.hooks]]
+[[install.files]]
 src = "hooks/post-tool-use.sh"
 dst = "~/.claude/hooks/mure-post-tool-use.sh"
 mode = "0755"
 
-[[install.hooks]]
+[[install.files]]
 src = "hooks/stop.sh"
 dst = "~/.claude/hooks/mure-stop.sh"
 mode = "0755"

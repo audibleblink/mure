@@ -65,18 +65,18 @@ func BuildPlan(m Manifest, root fs.FS) ([]FileOp, error) {
 			Merge:   m.Install.Skill.Merge,
 		})
 	}
-	for _, h := range m.Install.Hooks {
-		dst, err := expandHome(h.Dst)
+	for _, f := range m.Install.Files {
+		dst, err := expandHome(f.Dst)
 		if err != nil {
 			return nil, err
 		}
-		mode, err := parseMode(h.Mode)
+		mode, err := parseMode(f.Mode)
 		if err != nil {
 			return nil, err
 		}
-		content, err := fs.ReadFile(root, path.Join(m.Name, h.Src))
+		content, err := fs.ReadFile(root, path.Join(m.Name, f.Src))
 		if err != nil {
-			return nil, fmt.Errorf("read hook %s: %w", h.Src, err)
+			return nil, fmt.Errorf("read file %s: %w", f.Src, err)
 		}
 		ops = append(ops, FileOp{
 			Dst:     dst,

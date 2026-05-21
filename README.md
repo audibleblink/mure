@@ -168,7 +168,7 @@ Full list: [`tmux-mure/README.md`](./tmux-mure/README.md).
 | `mure` daemon + CLI | One small Go binary. The only thing you install. |
 | Sidebar TUI | Bubble Tea pane (`mure sidebar`), opens via `prefix + M`. |
 | `tmux-mure` plugin | Pure-shell tmux plugin: hooks, sidebar toggle, spawn-target. |
-| Harness manifests | `harnesses/<name>/` ships a manifest + skill + hooks for each supported coding agent (`pi`, `claude`, `opencode`). |
+| Harness manifests | `harnesses/<name>/` ships a manifest + skill + installable files (hooks, plugins) for each supported coding agent (`pi`, `claude`, `opencode`). |
 
 The daemon talks NDJSON over a per-session Unix socket
 (`~/Library/Caches/mure/<session>/daemon.sock` on macOS,
@@ -179,20 +179,22 @@ your machine.
 
 A *harness* is a coding-agent CLI mure knows how to launch and listen to.
 Each one is a directory under [`harnesses/`](./harnesses) with a single
-`manifest.toml`, an optional `skill.md`, and optional `hooks/` scripts.
+`manifest.toml`, an optional `skill.md`, and any files (shell hooks, TS
+plugins, config snippets) the harness needs dropped onto disk.
 
 1. **Create the folder.** `harnesses/<name>/` — `<name>` is what users type
    in `mure integration install <name>` and `mure spawn --harness <name>`.
 2. **Write `manifest.toml`.** Required keys: `manifest_version`, `name`,
    `command`, `task_arg` (`positional` | `stdin` | `flag:--xyz` | `none`).
-   Declare `[capabilities]` honestly — set `status`/`result` to `false`
-   when the harness has no hook mechanism and mure will fall back to
-   capture-pane sampling (the harness shows up as `degraded` in
-   `mure integration list`).
-3. **Drop hooks.** Each script is one `mure emit status …` or
-   `mure emit result -` call. List them under `[[install.hooks]]` with
-   `src` (path inside the harness folder), `dst` (target, `~` expanded),
-   and `mode`.
+   Declare `[capabilities]` honestly — `status` and `result` should be
+   `true` only if the harness emits NDJSON frames via a hook script or a
+   plugin (see below).
+3. **Drop the bridge.** Whatever your harness uses to signal tool/turn
+   lifecycle — shell hooks (pi, claude), a TS plugin (opencode) — each
+   one ultimately produces a `mure emit status …` or `mure emit result -`
+   frame. List the files under `[[install.files]]` with `src` (path
+   inside the harness folder), `dst` (target, `~` expanded), and `mode`.
+   Shell hooks use `0755`; plugins / data files use `0644`.
 4. **Optional skill file.** `skill.md` is the instruction blob that
    teaches the agent that `mure spawn` / `mure wait` exist; declare its
    destination and merge strategy under `[install.skill]` (`append`,

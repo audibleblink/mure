@@ -9,6 +9,6 @@ the environment) two shell commands are available for fanning work out:
 - `mure wait <agent_id>` — Block until that agent emits its final result,
   then print the result text on stdout.
 
-Note: until a dedicated opencode plugin is published, mure infers this
-pane's activity from its tmux output (capture-pane fallback) rather than
-from opencode lifecycle events — the sidebar may show `(degraded)`.
+Status and result frames are produced by the bundled opencode plugin
+(`~/.config/opencode/plugins/mure.ts`, installed by
+`mure integration install opencode`).

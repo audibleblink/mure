@@ -1,19 +1,16 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"flag"
 	"fmt"
-	"net"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/audibleblink/mure/internal/harnesses"
-	"github.com/audibleblink/mure/internal/sock"
 )
 
 func cmdSpawn(ctx context.Context, argv []string, stdout, stderr *os.File) int {
@@ -103,21 +100,6 @@ func cmdSpawn(ctx context.Context, argv []string, stdout, stderr *os.File) int {
 	if _, err := tmuxCmd(ctx, "set-option", "-p", "-t", paneID, "@mure-spawned-at", now); err != nil {
 		fmt.Fprintf(stderr, "mure spawn: %v\n", err)
 		return 1
-	}
-
-	// Register pane → harness binding with the daemon so it can decide whether
-	// to engage the capture-pane fallback later.
-	if err := sendRegisterPane(sockPath, sock.RegisterPane{
-		V:         sock.ProtocolVersion,
-		Event:     "register_pane",
-		PaneID:    paneID,
-		AgentID:   agentID,
-		Harness:   m.Name,
-		StatusCap: m.Capabilities.Status,
-		ResultCap: m.Capabilities.Result,
-	}); err != nil {
-		fmt.Fprintf(stderr, "mure spawn: register pane: %v\n", err)
-		// Non-fatal: the pane is alive; capability tracking is best-effort.
 	}
 
 	fmt.Fprintf(stdout, "%s %s\n", agentID, paneID)
@@ -214,26 +196,4 @@ func spawnPayload(se spawnEnv, environ []string) string {
 // command string handed to tmux.
 func shellEscape(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
-}
-
-// sendRegisterPane opens a short-lived CLI connection to the daemon and emits
-// a single register_pane frame.
-func sendRegisterPane(sockPath string, rp sock.RegisterPane) error {
-	d := net.Dialer{Timeout: time.Second}
-	conn, err := d.Dial("unix", sockPath)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-	if err := sock.WriteFrame(conn, sock.Hello{V: sock.ProtocolVersion, Event: "hello", Role: sock.RoleCLI}); err != nil {
-		return err
-	}
-	// Drain initial roster snapshot reply so the server is ready for our frame.
-	br := bufio.NewReader(conn)
-	_ = conn.SetReadDeadline(time.Now().Add(time.Second))
-	if _, err := sock.ReadFrame(br, sock.MaxFrameSize); err != nil {
-		return err
-	}
-	_ = conn.SetReadDeadline(time.Time{})
-	return sock.WriteFrame(conn, rp)
 }

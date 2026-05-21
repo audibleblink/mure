@@ -21,7 +21,7 @@ subtools = false
 path = "~/.config/pi/skill.md"
 merge = "append"
 
-[[install.hooks]]
+[[install.files]]
 src = "hooks/on-tool-start.sh"
 dst = "~/.config/pi/hooks/on-tool-start.sh"
 mode = "0755"
@@ -38,8 +38,8 @@ func TestDecodeManifest_Valid(t *testing.T) {
 	if !m.Capabilities.Status || m.Capabilities.Subtools {
 		t.Fatalf("bad caps: %+v", m.Capabilities)
 	}
-	if len(m.Install.Hooks) != 1 || m.Install.Hooks[0].Mode != "0755" {
-		t.Fatalf("bad hooks: %+v", m.Install.Hooks)
+	if len(m.Install.Files) != 1 || m.Install.Files[0].Mode != "0755" {
+		t.Fatalf("bad files: %+v", m.Install.Files)
 	}
 }
 

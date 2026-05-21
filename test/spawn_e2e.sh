@@ -75,7 +75,7 @@ if ! grep -q READY <<<"$captured"; then
 fi
 
 # Emit a status frame on behalf of the spawned pane and confirm it surfaces.
-MURE_AGENT_ID="$agent_id" "$bin" emit status working --tool foo
+MURE_AGENT_ID="$agent_id" MURE_PANE_ID="$pane_id" "$bin" emit status working --tool foo
 
 sleep 0.1
 snapshot=$("$bin" ls --json)

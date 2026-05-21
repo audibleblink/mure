@@ -168,9 +168,9 @@ func (s *Server) handle(ctx context.Context, conn net.Conn) {
 }
 
 func (s *Server) handleAgent(ctx context.Context, conn net.Conn, br *bufio.Reader, h sock.Hello) {
-	if !h.Oneshot {
-		s.roster.UpsertFromHello(h)
-	}
+	// Upsert identity (pane_id, role, etc.) from every hello. Oneshot only
+	// changes lifecycle: we must not Remove the agent when the socket closes.
+	s.roster.UpsertFromHello(h)
 	for {
 		if ctx.Err() != nil {
 			return
@@ -271,12 +271,6 @@ func (s *Server) handleCLI(ctx context.Context, conn net.Conn, br *bufio.Reader,
 			if err := sock.WriteFrame(conn, s.roster.Snapshot()); err != nil {
 				return
 			}
-		case "register_pane":
-			var rp sock.RegisterPane
-			if err := json.Unmarshal(line, &rp); err != nil {
-				return
-			}
-			s.roster.RegisterPane(rp)
 		case "wait":
 			var w sock.Wait
 			if err := json.Unmarshal(line, &w); err != nil {

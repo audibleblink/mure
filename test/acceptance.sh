@@ -51,33 +51,16 @@ for slot in "--harness flag" "MURE_HARNESS env" "session @mure-harness" "global 
 done
 pass "spawn 4-slot resolution error"
 
-# 5. Degraded harness (capabilities.status=false) shows up labeled degraded.
-HARNESS_DIR="$(mktemp -d)"
-mkdir -p "$HARNESS_DIR/degraded"
-cat >"$HARNESS_DIR/degraded/manifest.toml" <<'TOML'
-name = "degraded"
-display = "degraded"
-command = "echo"
-task_arg = "none"
-[capabilities]
-spawn = true
-status = false
-result = false
-TOML
-got=$(MURE_HARNESSES_DIR="$HARNESS_DIR" "$bin" integration list | awk '/^degraded/ {print $NF}')
-[ "$got" = "degraded" ] || fail "degraded label missing: got=[$got]"
-pass "capabilities.status=false harness labeled degraded"
-
-# 6. Removed code paths gone from the tree.
+# 5. Removed code paths gone from the tree.
 [ ! -e pi-mure ] || fail "pi-mure/ still present"
 [ ! -e internal/piext ] || fail "internal/piext/ still present"
 pass "pi-mure/ and internal/piext/ absent"
 
-# 7. README mentions Adding a harness.
+# 6. README mentions Adding a harness.
 grep -q "Adding a harness" README.md || fail "README missing 'Adding a harness' section"
 pass "README has Adding a harness"
 
-# 8. spawn_e2e.sh covers spawn + emit + ls --json end-to-end (item 5+6 dynamic).
+# 7. spawn_e2e.sh covers spawn + emit + ls --json end-to-end.
 if command -v tmux >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
   bash test/spawn_e2e.sh >/dev/null
   pass "spawn_e2e.sh (env propagation + status reflected in mure ls)"

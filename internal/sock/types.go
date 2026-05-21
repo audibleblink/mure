@@ -95,20 +95,6 @@ type AgentSnapshot struct {
 	CreatedAt       int64  `json:"created_at,omitempty"`
 	LastTurnEndedAt int64  `json:"last_turn_ended_at,omitempty"`
 	Result          string `json:"result,omitempty"`
-	// Degraded indicates the harness lacks first-class status/result reporting
-	// and the daemon is filling in via capture-pane fallback.
-	Degraded bool `json:"degraded,omitempty"`
-}
-
-// RegisterPane records a pane_id → harness binding at spawn time.
-type RegisterPane struct {
-	V          int    `json:"v"`
-	Event      string `json:"event"`
-	PaneID     string `json:"pane_id"`
-	AgentID    string `json:"agent_id,omitempty"`
-	Harness    string `json:"harness"`
-	StatusCap  bool   `json:"status_cap"`
-	ResultCap  bool   `json:"result_cap"`
 }
 
 // Roster is a daemon → sidebar full-state snapshot.

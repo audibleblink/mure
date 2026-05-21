@@ -26,7 +26,6 @@ type agentState struct {
 	CreatedAt       int64
 	LastTurnEndedAt int64
 	Result          string
-	Degraded        bool
 }
 
 func (a *agentState) snapshot() sock.AgentSnapshot {
@@ -39,16 +38,7 @@ func (a *agentState) snapshot() sock.AgentSnapshot {
 		CreatedAt:       a.CreatedAt,
 		LastTurnEndedAt: a.LastTurnEndedAt,
 		Result:          a.Result,
-		Degraded:        a.Degraded,
 	}
-}
-
-// paneBinding records the harness wired to a pane at spawn time.
-type paneBinding struct {
-	Harness   string
-	AgentID   string
-	StatusCap bool
-	ResultCap bool
 }
 
 // Roster is the canonical agent registry. All mutations flow through a single
@@ -63,7 +53,6 @@ type rosterCore struct {
 	agents      map[string]*agentState
 	subscribers map[*subscriber]struct{}
 	launchDir   string
-	panes       map[string]paneBinding
 }
 
 type subscriber struct {
@@ -80,7 +69,6 @@ func NewRoster() *Roster {
 	core := &rosterCore{
 		agents:      make(map[string]*agentState),
 		subscribers: make(map[*subscriber]struct{}),
-		panes:       make(map[string]paneBinding),
 	}
 	r.doneWG.Add(1)
 	go r.run(core)
@@ -222,46 +210,6 @@ func (r *Roster) Snapshot() sock.Roster {
 		}
 	})
 	return out
-}
-
-// RegisterPane records a pane → harness binding from a spawn-time register frame.
-// If the harness lacks status capability, agents on that pane will be flagged
-// degraded so the daemon’s capture-pane fallback can substitute for missing
-// status frames.
-func (r *Roster) RegisterPane(rp sock.RegisterPane) {
-	r.submit(func(c *rosterCore) {
-		c.panes[rp.PaneID] = paneBinding{
-			Harness:   rp.Harness,
-			AgentID:   rp.AgentID,
-			StatusCap: rp.StatusCap,
-			ResultCap: rp.ResultCap,
-		}
-		if rp.AgentID == "" {
-			return
-		}
-		a, ok := c.agents[rp.AgentID]
-		if !ok {
-			a = &agentState{ID: rp.AgentID, Status: sock.StatusIdle, PaneID: rp.PaneID, CreatedAt: time.Now().UnixNano()}
-			c.agents[rp.AgentID] = a
-		}
-		a.Degraded = !rp.StatusCap || !rp.ResultCap
-		broadcast(c, a)
-	})
-}
-
-// PaneBinding returns the recorded harness binding for paneID and whether it was found.
-func (r *Roster) PaneBinding(paneID string) (harness string, statusCap bool, resultCap bool, ok bool) {
-	r.submitWait(func(c *rosterCore) {
-		pb, found := c.panes[paneID]
-		if !found {
-			return
-		}
-		harness = pb.Harness
-		statusCap = pb.StatusCap
-		resultCap = pb.ResultCap
-		ok = true
-	})
-	return
 }
 
 // SetLaunchDir records the directory under which `mure up` started.
