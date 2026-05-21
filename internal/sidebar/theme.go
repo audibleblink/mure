@@ -21,20 +21,10 @@ type Palette struct {
 	Divider      lipgloss.AdaptiveColor
 }
 
-// DefaultPalette is the Catppuccin Latte (light) / Mocha (dark) palette
-// specified in PRD 002 §6.1.
-var DefaultPalette = Palette{
-	AccentA:      lipgloss.AdaptiveColor{Light: "#8839ef", Dark: "#cba6f7"},
-	AccentB:      lipgloss.AdaptiveColor{Light: "#ea76cb", Dark: "#f5c2e7"},
-	Working: lipgloss.AdaptiveColor{Light: "#40a02b", Dark: "#a6e3a1"},
-	Blocked: lipgloss.AdaptiveColor{Light: "1", Dark: "1"}, // terminal red (ANSI 1)
-	Idle:    lipgloss.AdaptiveColor{Light: "#6c6f85", Dark: "#9399b2"},
-	Dim:          lipgloss.AdaptiveColor{Light: "#6c6f85", Dark: "#9399b2"},
-	SelectionBG:  lipgloss.AdaptiveColor{Light: "#dce0e8", Dark: "#313244"},
-	SelectionFG:  lipgloss.AdaptiveColor{Light: "#4c4f69", Dark: "#cdd6f4"},
-	Background:   lipgloss.AdaptiveColor{Light: "#eff1f5", Dark: "#1d1d2e"},
-	Divider:      lipgloss.AdaptiveColor{Light: "#ccd0da", Dark: "#313244"},
-}
+// DefaultPalette is the first bundled theme (see themes.go). The sidebar
+// boots with this palette; users can cycle through Themes via the in-pane
+// picker (prefix-key `t`).
+var DefaultPalette = Themes[0].Palette
 
 var active = DefaultPalette
 

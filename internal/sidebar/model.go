@@ -38,6 +38,10 @@ type Model struct {
 	inputMode bool
 	inputBuf  string
 
+	themePicker  bool
+	themeIdx     int // currently-active theme (live-previewed while picker open)
+	themePrevIdx int // theme to restore on Esc
+
 	focused bool
 }
 
@@ -145,6 +149,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.focused = false
 		return m, nil
 	case tea.KeyMsg:
+		if m.themePicker {
+			return m.handleThemeKey(msg)
+		}
 		if m.inputMode {
 			return m.handleInputKey(msg)
 		}
@@ -266,11 +273,37 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				_ = m.execCmd("tmux", "kill-pane", "-t", pane).Run()
 			}
 		}
+	case "t", "T":
+		m.themePicker = true
+		m.themePrevIdx = m.themeIdx
 	case "q":
 		if m.tmuxPane != "" {
 			_ = m.execCmd("tmux", "kill-pane", "-t", m.tmuxPane).Run()
 		}
 		return m, tea.Quit
+	}
+	return m, nil
+}
+
+// handleThemeKey routes input while the theme picker is open.
+func (m Model) handleThemeKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "j", "down":
+		if m.themeIdx < len(Themes)-1 {
+			m.themeIdx++
+			m.palette = Themes[m.themeIdx].Palette
+		}
+	case "k", "up":
+		if m.themeIdx > 0 {
+			m.themeIdx--
+			m.palette = Themes[m.themeIdx].Palette
+		}
+	case "enter":
+		m.themePicker = false
+	case "esc", "q":
+		m.themeIdx = m.themePrevIdx
+		m.palette = Themes[m.themeIdx].Palette
+		m.themePicker = false
 	}
 	return m, nil
 }
@@ -351,6 +384,10 @@ func (m Model) View() string {
 
 	agentRows := tallRows
 	rowsPerAgent := 3
+	if m.themePicker {
+		agentRows = m.renderThemePicker(inner)
+		rowsPerAgent = 1
+	}
 	detailLinesCount := 0
 	if m.expanded && m.selected >= 0 && m.selected < len(m.agents) {
 		detailLinesCount = 6
@@ -390,6 +427,7 @@ func (m Model) buildFooter(inner int) []string {
 		{"c", "new"},
 		{"i", "info"},
 		{"x", "kill"},
+		{"t", "theme"},
 		{"q", "quit"},
 	}
 	padLine := func(s string, n int, w int) string {
@@ -778,6 +816,45 @@ func (m Model) statusColor(s string) lipgloss.AdaptiveColor {
 		return m.palette.Idle
 	}
 	return m.palette.Dim
+}
+
+// renderThemePicker builds the picker rows shown in place of the agent
+// list while m.themePicker is true. One blank header line, a title, then
+// one row per theme; cursor marker on the active row.
+func (m Model) renderThemePicker(inner int) []string {
+	bg := m.palette.Background
+	plain := lipgloss.NewStyle().Background(bg)
+	title := lipgloss.NewStyle().Foreground(m.palette.AccentA).Background(bg).Bold(true)
+	hint := lipgloss.NewStyle().Foreground(m.palette.Dim).Background(bg).Italic(true)
+
+	pad := func(s string) string {
+		w := utf8.RuneCountInString(stripANSI(s))
+		if w < inner {
+			s += plain.Render(strings.Repeat(" ", inner-w))
+		}
+		return s
+	}
+
+	out := []string{pad(title.Render(" theme"))}
+	for i, th := range Themes {
+		marker := " "
+		rowBG := bg
+		if i == m.themeIdx {
+			marker = "▸"
+			rowBG = m.palette.SelectionBG
+		}
+		rowStyle := lipgloss.NewStyle().Background(rowBG)
+		mark := lipgloss.NewStyle().Foreground(m.palette.AccentA).Background(rowBG).Render(marker)
+		name := lipgloss.NewStyle().Foreground(m.palette.SelectionFG).Background(rowBG).Render(" " + th.Name)
+		line := mark + name
+		w := utf8.RuneCountInString(stripANSI(line))
+		if w < inner {
+			line += rowStyle.Render(strings.Repeat(" ", inner-w))
+		}
+		out = append(out, line)
+	}
+	out = append(out, pad(hint.Render(" ⏎ ok  esc cancel")))
+	return out
 }
 
 func runeTrunc(s string, n int) string {
