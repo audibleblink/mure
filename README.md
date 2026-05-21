@@ -179,7 +179,7 @@ your machine.
 
 A *harness* is a coding-agent CLI mure knows how to launch and listen to.
 Each one is a directory under [`harnesses/`](./harnesses) with a single
-`manifest.toml`, an optional `skill.md`, and any files (shell hooks, TS
+`manifest.toml`, an optional `SKILL.md` (Agent Skills spec — YAML frontmatter with `name` and `description`), and any files (shell hooks, TS
 plugins, config snippets) the harness needs dropped onto disk.
 
 1. **Create the folder.** `harnesses/<name>/` — `<name>` is what users type
@@ -195,10 +195,13 @@ plugins, config snippets) the harness needs dropped onto disk.
    frame. List the files under `[[install.files]]` with `src` (path
    inside the harness folder), `dst` (target, `~` expanded), and `mode`.
    Shell hooks use `0755`; plugins / data files use `0644`.
-4. **Optional skill file.** `skill.md` is the instruction blob that
-   teaches the agent that `mure spawn` / `mure wait` exist; declare its
-   destination and merge strategy under `[install.skill]` (`append`,
-   `replace`, or `create-if-missing`).
+4. **Optional skill file.** `SKILL.md` is the instruction blob that
+   teaches the agent that `mure spawn` / `mure wait` exist. It must
+   begin with YAML frontmatter (`name`, `description`) per the Agent
+   Skills spec, and is conventionally installed into a `skills/<name>/`
+   directory. Declare its destination and merge strategy under
+   `[install.skill]` (`append`, `replace`, or `create-if-missing`;
+   `replace` is the right choice for a standalone skill file).
 5. **Test locally.** `make build && ./bin/mure integration install <name>`
    followed by `mure integration list` and `mure integration uninstall`.
 6. Open a PR. CI validates every manifest under `harnesses/` decodes

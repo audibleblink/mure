@@ -22,7 +22,7 @@ func setupTestHarness(t *testing.T) {
 			"[capabilities]\nspawn = true\nstatus = true\nresult = true\n" +
 			"[install.skill]\npath = \"~/skill.md\"\nmerge = \"append\"\n" +
 			"[[install.files]]\nsrc = \"h.sh\"\ndst = \"~/h.sh\"\nmode = \"0755\"\n")},
-		"demo/skill.md": {Data: []byte("body")},
+		"demo/SKILL.md": {Data: []byte("body")},
 		"demo/h.sh":     {Data: []byte("#!/bin/sh\n")},
 	})
 	t.Cleanup(func() { harnesses.SetFSForTesting(nil) })

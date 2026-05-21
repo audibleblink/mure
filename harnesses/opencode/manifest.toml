@@ -15,8 +15,8 @@ result = true
 subtools = true
 
 [install.skill]
-path = "~/.config/opencode/AGENTS.md"
-merge = "append"
+path = "~/.agents/skills/mure/SKILL.md"
+merge = "replace"
 
 [[install.files]]
 src  = "plugins/mure.ts"

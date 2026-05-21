@@ -25,7 +25,7 @@ func TestInstallUninstall_RoundTrip(t *testing.T) {
 		},
 	}
 	fs := fstest.MapFS{
-		"demo/skill.md": {Data: []byte("body")},
+		"demo/SKILL.md": {Data: []byte("body")},
 		"demo/h.sh":     {Data: []byte("#!/bin/sh\n")},
 	}
 	ops, err := BuildPlan(m, fs)

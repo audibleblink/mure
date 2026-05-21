@@ -11,21 +11,25 @@ status = true
 result = true
 subtools = true
 
+# Skill + hooks are colocated under ~/.claude/skills/mure/. Claude Code
+# auto-discovers the skill, and the hooks declared in its frontmatter
+# fire automatically while the skill is active. No settings.json edit
+# required.
 [install.skill]
-path = "~/.claude/CLAUDE.md"
-merge = "append"
+path = "~/.claude/skills/mure/SKILL.md"
+merge = "replace"
 
 [[install.files]]
-src = "hooks/pre-tool-use.sh"
-dst = "~/.claude/hooks/mure-pre-tool-use.sh"
+src = "scripts/pre-tool-use.sh"
+dst = "~/.claude/skills/mure/scripts/pre-tool-use.sh"
 mode = "0755"
 
 [[install.files]]
-src = "hooks/post-tool-use.sh"
-dst = "~/.claude/hooks/mure-post-tool-use.sh"
+src = "scripts/post-tool-use.sh"
+dst = "~/.claude/skills/mure/scripts/post-tool-use.sh"
 mode = "0755"
 
 [[install.files]]
-src = "hooks/stop.sh"
-dst = "~/.claude/hooks/mure-stop.sh"
+src = "scripts/stop.sh"
+dst = "~/.claude/skills/mure/scripts/stop.sh"
 mode = "0755"

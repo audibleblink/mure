@@ -48,6 +48,26 @@ export const MurePlugin: Plugin = async ({ client }) => ({
     await emit({ event: "status", status: "idle" })
   },
   event: async ({ event }: { event: any }) => {
+    // Permission prompts stall the agent; surface them as a blocked state
+    // so parents (and the sidebar) see something other than "working".
+    if (event?.type === "permission.asked") {
+      await emit({ event: "status", status: "blocked" })
+      return
+    }
+    if (event?.type === "permission.replied") {
+      await emit({ event: "status", status: "working" })
+      return
+    }
+    // Session failures must produce a result frame, otherwise `mure wait`
+    // hangs until timeout instead of returning the error to the parent.
+    if (event?.type === "session.error") {
+      const err = event?.properties?.error
+      const msg =
+        (typeof err === "string" ? err : err?.message || err?.data?.message) ||
+        "session error"
+      await emit({ event: "result", text: `[error] ${msg}` })
+      return
+    }
     if (event?.type !== "session.idle") return
     const sid = event?.properties?.sessionID
     if (!sid) return

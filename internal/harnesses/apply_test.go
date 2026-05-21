@@ -22,7 +22,7 @@ func sampleManifest(t *testing.T, tmp string) (Manifest, fstest.MapFS) {
 		},
 	}
 	fs := fstest.MapFS{
-		"demo/skill.md":      {Data: []byte("skill-body")},
+		"demo/SKILL.md":      {Data: []byte("skill-body")},
 		"demo/hooks/start.sh": {Data: []byte("#!/bin/sh\necho hi\n")},
 		"demo/data.txt":      {Data: []byte("data1\n")},
 	}
@@ -86,7 +86,7 @@ func TestApply_CreateIfMissing(t *testing.T) {
 		Name: "x", Command: "x",
 		Install: Install{Skill: Skill{Path: "~/file", Merge: "create-if-missing"}},
 	}
-	fs := fstest.MapFS{"x/skill.md": {Data: []byte("new")}}
+	fs := fstest.MapFS{"x/SKILL.md": {Data: []byte("new")}}
 	ops, err := BuildPlan(m, fs)
 	if err != nil {
 		t.Fatal(err)

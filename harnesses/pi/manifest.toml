@@ -11,25 +11,13 @@ result = true
 subtools = true
 
 [install.skill]
-path = "~/.pi/agent/skills/mure/SKILL.md"
+path = "~/.agents/skills/mure/SKILL.md"
 merge = "replace"
 
+# Status & result are delivered by a pi extension (TS file) that subscribes
+# to tool_execution_start / tool_execution_end / agent_end and writes
+# NDJSON frames directly to $MURE_SOCKET. See extensions/mure.ts.
 [[install.files]]
-src = "hooks/on-tool-start.sh"
-dst = "~/.pi/agent/hooks/mure/on-tool-start.sh"
-mode = "0755"
-
-[[install.files]]
-src = "hooks/on-tool-end.sh"
-dst = "~/.pi/agent/hooks/mure/on-tool-end.sh"
-mode = "0755"
-
-[[install.files]]
-src = "hooks/on-turn-end.sh"
-dst = "~/.pi/agent/hooks/mure/on-turn-end.sh"
-mode = "0755"
-
-[[install.files]]
-src = "hooks/on-blocked.sh"
-dst = "~/.pi/agent/hooks/mure/on-blocked.sh"
-mode = "0755"
+src = "extensions/mure.ts"
+dst = "${PI_CODING_AGENT_DIR:-~/.config/pi/agent}/extensions/mure.ts"
+mode = "0644"
