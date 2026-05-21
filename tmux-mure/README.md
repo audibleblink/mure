@@ -98,7 +98,7 @@ server, then reload your config.
 | `@mure-sidebar-width` | `36` | Sidebar pane width (columns / rows). |
 | `@mure-sidebar-position` | `left` | `left`, `right`, `top`, `bottom`. |
 | `@mure-sidebar-key` | `M` | Prefix-key for sidebar toggle. |
-| `@mure-spawn-target` | `subagents-window` | Read by `mure spawn`: `subagents-window`, `right-of-active`, `below-active`, `new-window`. Unknown values warn and fall back to `subagents-window`. |
+| `@mure-spawn-target` | `subagents-window` | Read by `mure spawn`. Either the reserved keyword `subagents-window` (find-or-create a dedicated window) or any tmux pane-creating command (e.g. `split-window -h`, `new-window -t :9`). The plugin rewrites legacy keywords `right-of-active`, `below-active`, `new-window` to their command equivalents at load time. mure appends `-P -F '#{pane_id}' <payload>` and runs it. |
 | `@mure-color-working` | `green` | Border fg when agent is working. |
 | `@mure-color-blocked` | `yellow` | Border fg when blocked. |
 | `@mure-color-errored` | `red` | Border fg when errored. |

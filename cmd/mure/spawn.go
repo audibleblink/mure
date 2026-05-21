@@ -39,7 +39,7 @@ func cmdSpawn(ctx context.Context, argv []string, stdout, stderr *os.File) int {
 	// mure-specific values for the spawned pane.
 	payload := spawnPayload(agentID, sockPath, role, task, agentCmd, os.Environ())
 
-	plan, err := pickSpawnTarget(tmuxRunnerFromCtx(ctx), target, payload, stderr)
+	plan, err := pickSpawnTarget(tmuxRunnerFromCtx(ctx), target, payload)
 	if err != nil {
 		fmt.Fprintf(stderr, "mure spawn: %v\n", err)
 		return 1

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"reflect"
 	"strings"
 	"testing"
@@ -26,10 +25,9 @@ func (r *recRunner) run(args ...string) (string, error) {
 	return r.responses[key], nil
 }
 
-func TestPickSpawnTarget_RightOfActive(t *testing.T) {
+func TestPickSpawnTarget_Template_SplitHorizontal(t *testing.T) {
 	r := newRecRunner()
-	var buf bytes.Buffer
-	plan, err := pickSpawnTarget(r.run, "right-of-active", "PL", &buf)
+	plan, err := pickSpawnTarget(r.run, "split-window -h", "PL")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -43,37 +41,11 @@ func TestPickSpawnTarget_RightOfActive(t *testing.T) {
 	if len(r.calls) != 0 {
 		t.Errorf("expected no runner calls, got %v", r.calls)
 	}
-	if buf.Len() != 0 {
-		t.Errorf("expected empty stderr, got %q", buf.String())
-	}
 }
 
-func TestPickSpawnTarget_BelowActive(t *testing.T) {
+func TestPickSpawnTarget_Template_NewWindow(t *testing.T) {
 	r := newRecRunner()
-	var buf bytes.Buffer
-	plan, err := pickSpawnTarget(r.run, "below-active", "PL", &buf)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	want := []string{"split-window", "-v", "-P", "-F", "#{pane_id}", "PL"}
-	if !reflect.DeepEqual(plan.Argv, want) {
-		t.Errorf("Argv = %v, want %v", plan.Argv, want)
-	}
-	if plan.PostCreate != nil {
-		t.Errorf("PostCreate should be nil")
-	}
-	if len(r.calls) != 0 {
-		t.Errorf("expected no runner calls, got %v", r.calls)
-	}
-	if buf.Len() != 0 {
-		t.Errorf("expected empty stderr, got %q", buf.String())
-	}
-}
-
-func TestPickSpawnTarget_NewWindow(t *testing.T) {
-	r := newRecRunner()
-	var buf bytes.Buffer
-	plan, err := pickSpawnTarget(r.run, "new-window", "PL", &buf)
+	plan, err := pickSpawnTarget(r.run, "new-window", "PL")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -81,14 +53,17 @@ func TestPickSpawnTarget_NewWindow(t *testing.T) {
 	if !reflect.DeepEqual(plan.Argv, want) {
 		t.Errorf("Argv = %v, want %v", plan.Argv, want)
 	}
-	if plan.PostCreate != nil {
-		t.Errorf("PostCreate should be nil")
+}
+
+func TestPickSpawnTarget_Template_ArbitraryFlags(t *testing.T) {
+	r := newRecRunner()
+	plan, err := pickSpawnTarget(r.run, "split-window -h -f -l 40%", "PL")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(r.calls) != 0 {
-		t.Errorf("expected no runner calls, got %v", r.calls)
-	}
-	if buf.Len() != 0 {
-		t.Errorf("expected empty stderr, got %q", buf.String())
+	want := []string{"split-window", "-h", "-f", "-l", "40%", "-P", "-F", "#{pane_id}", "PL"}
+	if !reflect.DeepEqual(plan.Argv, want) {
+		t.Errorf("Argv = %v, want %v", plan.Argv, want)
 	}
 }
 
@@ -97,8 +72,7 @@ func TestPickSpawnTarget_EmptyDefaultsToSubagentsWindow(t *testing.T) {
 	r := newRecRunner()
 	r.responses["display-message -p #{session_id}"] = "$1"
 	r.responses["list-windows -t $1 -F #{window_id} #{window_name} #{@mure-subagents-window}"] = ""
-	var buf bytes.Buffer
-	plan, err := pickSpawnTarget(r.run, "", "PL", &buf)
+	plan, err := pickSpawnTarget(r.run, "", "PL")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -109,9 +83,6 @@ func TestPickSpawnTarget_EmptyDefaultsToSubagentsWindow(t *testing.T) {
 	if plan.PostCreate == nil {
 		t.Errorf("PostCreate should not be nil")
 	}
-	if buf.Len() != 0 {
-		t.Errorf("expected empty stderr, got %q", buf.String())
-	}
 }
 
 func TestPickSpawnTarget_SubagentsWindow_Missing(t *testing.T) {
@@ -119,8 +90,7 @@ func TestPickSpawnTarget_SubagentsWindow_Missing(t *testing.T) {
 	r := newRecRunner()
 	r.responses["display-message -p #{session_id}"] = "$1"
 	r.responses["list-windows -t $1 -F #{window_id} #{window_name} #{@mure-subagents-window}"] = ""
-	var buf bytes.Buffer
-	plan, err := pickSpawnTarget(r.run, "subagents-window", "PL", &buf)
+	plan, err := pickSpawnTarget(r.run, "subagents-window", "PL")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -156,8 +126,7 @@ func TestPickSpawnTarget_SubagentsWindow_MarkerPresent(t *testing.T) {
 	r := newRecRunner()
 	r.responses["display-message -p #{session_id}"] = "$1"
 	r.responses["list-windows -t $1 -F #{window_id} #{window_name} #{@mure-subagents-window}"] = "@3 misc \n@7 subagents 1\n@9 other "
-	var buf bytes.Buffer
-	plan, err := pickSpawnTarget(r.run, "subagents-window", "PL", &buf)
+	plan, err := pickSpawnTarget(r.run, "subagents-window", "PL")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -175,8 +144,7 @@ func TestPickSpawnTarget_SubagentsWindow_NameOnly(t *testing.T) {
 	r := newRecRunner()
 	r.responses["display-message -p #{session_id}"] = "$1"
 	r.responses["list-windows -t $1 -F #{window_id} #{window_name} #{@mure-subagents-window}"] = "@5 subagents"
-	var buf bytes.Buffer
-	plan, err := pickSpawnTarget(r.run, "subagents-window", "PL", &buf)
+	plan, err := pickSpawnTarget(r.run, "subagents-window", "PL")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -191,8 +159,7 @@ func TestPickSpawnTarget_SubagentsWindow_MarkerBeatsName(t *testing.T) {
 	r := newRecRunner()
 	r.responses["display-message -p #{session_id}"] = "$1"
 	r.responses["list-windows -t $1 -F #{window_id} #{window_name} #{@mure-subagents-window}"] = "@4 subagents \n@8 agents 1"
-	var buf bytes.Buffer
-	plan, err := pickSpawnTarget(r.run, "subagents-window", "PL", &buf)
+	plan, err := pickSpawnTarget(r.run, "subagents-window", "PL")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -202,32 +169,12 @@ func TestPickSpawnTarget_SubagentsWindow_MarkerBeatsName(t *testing.T) {
 	}
 }
 
-func TestPickSpawnTarget_UnknownTarget(t *testing.T) {
-	t.Setenv("TMUX_PANE", "")
-	r := newRecRunner()
-	r.responses["display-message -p #{session_id}"] = "$1"
-	r.responses["list-windows -t $1 -F #{window_id} #{window_name} #{@mure-subagents-window}"] = "@3 misc \n@7 subagents 1\n@9 other "
-	var buf bytes.Buffer
-	plan, err := pickSpawnTarget(r.run, "diagonal", "PL", &buf)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	want := []string{"split-window", "-h", "-t", "@7", "-P", "-F", "#{pane_id}", "PL"}
-	if !reflect.DeepEqual(plan.Argv, want) {
-		t.Errorf("Argv = %v, want %v", plan.Argv, want)
-	}
-	if !strings.Contains(buf.String(), `unknown @mure-spawn-target "diagonal"; falling back to subagents-window`) {
-		t.Errorf("stderr = %q, missing warning", buf.String())
-	}
-}
-
 func TestPickSpawnTarget_SessionLookup_TmuxPaneSet(t *testing.T) {
 	t.Setenv("TMUX_PANE", "%99")
 	r := newRecRunner()
 	r.responses["display-message -p -t %99 #{session_id}"] = "$2"
 	r.responses["list-windows -t $2 -F #{window_id} #{window_name} #{@mure-subagents-window}"] = ""
-	var buf bytes.Buffer
-	if _, err := pickSpawnTarget(r.run, "subagents-window", "PL", &buf); err != nil {
+	if _, err := pickSpawnTarget(r.run, "subagents-window", "PL"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	want0 := []string{"display-message", "-p", "-t", "%99", "#{session_id}"}
@@ -241,8 +188,7 @@ func TestPickSpawnTarget_SessionLookup_TmuxPaneUnset(t *testing.T) {
 	r := newRecRunner()
 	r.responses["display-message -p #{session_id}"] = "$1"
 	r.responses["list-windows -t $1 -F #{window_id} #{window_name} #{@mure-subagents-window}"] = ""
-	var buf bytes.Buffer
-	if _, err := pickSpawnTarget(r.run, "subagents-window", "PL", &buf); err != nil {
+	if _, err := pickSpawnTarget(r.run, "subagents-window", "PL"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	want0 := []string{"display-message", "-p", "#{session_id}"}

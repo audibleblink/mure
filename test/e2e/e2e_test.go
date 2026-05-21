@@ -360,17 +360,17 @@ func TestEndToEndSubagentsWindow(t *testing.T) {
 		t.Fatalf("after worker spawn want 2 windows, got %d: %v", len(wins2), wins2)
 	}
 
-	// No-regression: switch to right-of-active and spawn lands in original window.
-	if out, err := h.tmux("set-option", "-g", "@mure-spawn-target", "right-of-active").CombinedOutput(); err != nil {
+	// No-regression: switch to a tmux-command template and spawn lands in original window.
+	if out, err := h.tmux("set-option", "-g", "@mure-spawn-target", "split-window -h").CombinedOutput(); err != nil {
 		t.Fatalf("set-option: %v: %s", err, out)
 	}
 	origPanesBefore := len(strings.Split(h.tmuxOut("list-panes", "-t", origWindow, "-F", "#{pane_id}"), "\n"))
 	if out, err := h.mureCmd("spawn", "dummy").CombinedOutput(); err != nil {
-		t.Fatalf("mure spawn (right-of-active): %v: %s", err, out)
+		t.Fatalf("mure spawn (split-window -h): %v: %s", err, out)
 	}
 	wins3 := strings.Split(h.tmuxOut("list-windows", "-t", tmuxSession, "-F", "#{window_id}"), "\n")
 	if len(wins3) != 2 {
-		t.Fatalf("right-of-active: want 2 windows, got %d: %v", len(wins3), wins3)
+		t.Fatalf("split-window -h: want 2 windows, got %d: %v", len(wins3), wins3)
 	}
 	origPanesAfter := len(strings.Split(h.tmuxOut("list-panes", "-t", origWindow, "-F", "#{pane_id}"), "\n"))
 	if origPanesAfter != origPanesBefore+1 {

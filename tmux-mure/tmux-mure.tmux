@@ -71,7 +71,20 @@ tmux set-option -g @mure-color-idle         "$(tmux_get @mure-color-idle        
 tmux set-option -g @mure-sidebar-width    "$(tmux_get @mure-sidebar-width    36)"
 tmux set-option -g @mure-sidebar-position "$(tmux_get @mure-sidebar-position left)"
 tmux set-option -g @mure-sidebar-key      "$(tmux_get @mure-sidebar-key      M)"
-tmux set-option -g @mure-spawn-target     "$(tmux_get @mure-spawn-target     subagents-window)"
+# @mure-spawn-target is either the reserved keyword `subagents-window`
+# (find-or-create a dedicated window in this session) or an arbitrary tmux
+# command that creates a pane — mure appends `-P -F #{pane_id} <payload>`.
+# Legacy keyword values are rewritten here so users keep their existing
+# config, and so all behavior definitions live in the plugin where users
+# can override them.
+spawn_target_raw="$(tmux_get @mure-spawn-target subagents-window)"
+case "$spawn_target_raw" in
+    right-of-active) spawn_target="split-window -h" ;;
+    below-active)    spawn_target="split-window -v" ;;
+    new-window)      spawn_target="new-window" ;;
+    *)               spawn_target="$spawn_target_raw" ;;
+esac
+tmux set-option -g @mure-spawn-target "$spawn_target"
 
 # ---- Sidebar toggle bind ----
 sidebar_key="$(tmux_get @mure-sidebar-key M)"

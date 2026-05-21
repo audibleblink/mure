@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"io"
 	"os"
 	"strings"
 )
@@ -20,22 +18,26 @@ type spawnTargetPlan struct {
 }
 
 // pickSpawnTarget resolves @mure-spawn-target into a concrete plan.
-// payload is the shell command string to exec in the new pane.
-// stderr receives warnings (e.g. unknown target values).
-func pickSpawnTarget(run tmuxRunner, target string, payload string, stderr io.Writer) (spawnTargetPlan, error) {
-	switch target {
-	case "new-window":
-		return spawnTargetPlan{Argv: []string{"new-window", "-P", "-F", "#{pane_id}", payload}}, nil
-	case "below-active":
-		return spawnTargetPlan{Argv: []string{"split-window", "-v", "-P", "-F", "#{pane_id}", payload}}, nil
-	case "right-of-active":
-		return spawnTargetPlan{Argv: []string{"split-window", "-h", "-P", "-F", "#{pane_id}", payload}}, nil
-	case "subagents-window", "":
-		return planSubagentsWindow(run, payload)
-	default:
-		fmt.Fprintf(stderr, "mure spawn: unknown @mure-spawn-target %q; falling back to subagents-window\n", target)
+//
+// The option is either the reserved keyword "subagents-window" (or empty,
+// same meaning) — which triggers find-or-create of a dedicated window — or
+// an arbitrary tmux command template (e.g. "split-window -h",
+// "new-window", "split-window -h -f -l 40%"). For templates, mure appends
+// `-P -F #{pane_id} <payload>` and runs them.
+//
+// Legacy keyword values (right-of-active, below-active, new-window) are
+// rewritten to their command equivalents by the tmux plugin at load time,
+// so they do not appear here.
+func pickSpawnTarget(run tmuxRunner, target string, payload string) (spawnTargetPlan, error) {
+	if target == "" || target == "subagents-window" {
 		return planSubagentsWindow(run, payload)
 	}
+	fields := strings.Fields(target)
+	if len(fields) == 0 {
+		return planSubagentsWindow(run, payload)
+	}
+	argv := append(fields, "-P", "-F", "#{pane_id}", payload)
+	return spawnTargetPlan{Argv: argv}, nil
 }
 
 func planSubagentsWindow(run tmuxRunner, payload string) (spawnTargetPlan, error) {

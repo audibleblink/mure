@@ -27,11 +27,14 @@ width=$(tmux show-option -gqv @mure-sidebar-width)
 position=$(tmux show-option -gqv @mure-sidebar-position)
 [ -z "$position" ] && position=left
 
+# -f makes tmux split the full window (not just the active pane), so the
+# sidebar pane spans the entire edge of the window regardless of the
+# current pane layout.
 case "$position" in
-    right) split_args=(-h) ;;
-    top)   split_args=(-v -b) ;;
-    bottom) split_args=(-v) ;;
-    left|*) split_args=(-h -b) ;;
+    right) split_args=(-h -f) ;;
+    top)   split_args=(-v -b -f) ;;
+    bottom) split_args=(-v -f) ;;
+    left|*) split_args=(-h -b -f) ;;
 esac
 
 new_pane=$(tmux split-window -P -F '#{pane_id}' \
