@@ -92,6 +92,7 @@ type AgentSnapshot struct {
 	Role            string `json:"role,omitempty"`
 	Task            string `json:"task,omitempty"`
 	Pane            string `json:"pane,omitempty"`
+	CreatedAt       int64  `json:"created_at,omitempty"`
 	LastTurnEndedAt int64  `json:"last_turn_ended_at,omitempty"`
 	Result          string `json:"result,omitempty"`
 	// Degraded indicates the harness lacks first-class status/result reporting

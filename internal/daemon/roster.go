@@ -5,6 +5,7 @@ package daemon
 
 import (
 	"sync"
+	"time"
 
 	"github.com/audibleblink/mure/internal/sock"
 )
@@ -22,6 +23,7 @@ type agentState struct {
 	PiVersion       string
 	Status          string
 	Task            string
+	CreatedAt       int64
 	LastTurnEndedAt int64
 	Result          string
 	Degraded        bool
@@ -34,6 +36,7 @@ func (a *agentState) snapshot() sock.AgentSnapshot {
 		Role:            a.Role,
 		Task:            a.Task,
 		Pane:            a.PaneID,
+		CreatedAt:       a.CreatedAt,
 		LastTurnEndedAt: a.LastTurnEndedAt,
 		Result:          a.Result,
 		Degraded:        a.Degraded,
@@ -134,7 +137,7 @@ func (r *Roster) UpsertFromHello(h sock.Hello) {
 	r.submit(func(c *rosterCore) {
 		a, ok := c.agents[h.AgentID]
 		if !ok {
-			a = &agentState{ID: h.AgentID, Status: sock.StatusIdle}
+			a = &agentState{ID: h.AgentID, Status: sock.StatusIdle, CreatedAt: time.Now().UnixNano()}
 			c.agents[h.AgentID] = a
 		}
 		a.PaneID = h.PaneID
@@ -152,7 +155,7 @@ func (r *Roster) ApplyStatus(s sock.Status) {
 	r.submit(func(c *rosterCore) {
 		a, ok := c.agents[s.AgentID]
 		if !ok {
-			a = &agentState{ID: s.AgentID}
+			a = &agentState{ID: s.AgentID, CreatedAt: time.Now().UnixNano()}
 			c.agents[s.AgentID] = a
 		}
 		a.Status = s.Status
@@ -169,7 +172,7 @@ func (r *Roster) ApplyResult(res sock.Result) {
 	r.submit(func(c *rosterCore) {
 		a, ok := c.agents[res.AgentID]
 		if !ok {
-			a = &agentState{ID: res.AgentID}
+			a = &agentState{ID: res.AgentID, CreatedAt: time.Now().UnixNano()}
 			c.agents[res.AgentID] = a
 		}
 		a.Result = res.Text
@@ -238,7 +241,7 @@ func (r *Roster) RegisterPane(rp sock.RegisterPane) {
 		}
 		a, ok := c.agents[rp.AgentID]
 		if !ok {
-			a = &agentState{ID: rp.AgentID, Status: sock.StatusIdle, PaneID: rp.PaneID}
+			a = &agentState{ID: rp.AgentID, Status: sock.StatusIdle, PaneID: rp.PaneID, CreatedAt: time.Now().UnixNano()}
 			c.agents[rp.AgentID] = a
 		}
 		a.Degraded = !rp.StatusCap || !rp.ResultCap

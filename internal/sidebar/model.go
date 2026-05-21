@@ -206,7 +206,12 @@ func (m *Model) upsert(a sock.AgentSnapshot) {
 }
 
 func sortAgents(a []sock.AgentSnapshot) {
-	sort.Slice(a, func(i, j int) bool { return a[i].ID < a[j].ID })
+	sort.Slice(a, func(i, j int) bool {
+		if a[i].CreatedAt != a[j].CreatedAt {
+			return a[i].CreatedAt < a[j].CreatedAt
+		}
+		return a[i].ID < a[j].ID
+	})
 }
 
 func (m *Model) clampSelection() {
