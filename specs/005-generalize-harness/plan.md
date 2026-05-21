@@ -62,20 +62,20 @@ Drive `mure integration {install,uninstall,list}` entirely from the registry. Th
 Add `mure emit` as the canonical NDJSON producer. Daemon wire format is unchanged.
 
 ### Tasks
-- [ ] `cmd/mure/emit.go`:
+- [x] `cmd/mure/emit.go`:
   - `mure emit status <working|blocked|idle> [--tool <name>]`
   - `mure emit result -` (reads stdin until EOF)
   - Resolves pane/session/agent IDs from env (`MURE_SOCKET`, `MURE_PANE_ID`, `MURE_SESSION`, `MURE_AGENT_ID`); on missing env, falls back to `tmux display -p '#{pane_id}'` etc.; errors loudly if `MURE_SOCKET` is unset.
   - Marshals to the existing NDJSON frame shape used by `internal/daemon` and writes one line per invocation.
-- [ ] Daemon schema decision: read `internal/daemon` frame definitions; if `status` lacks an optional `tool` field, add it (additive only — no renames). Decision recorded as a code comment in `cmd/mure/emit.go` referencing the frame type used. Binary outcome: either no daemon change, or one additive field.
-- [ ] Register `emit` in `cmd/mure/main.go`.
-- [ ] Tests:
+- [x] Daemon schema decision: read `internal/daemon` frame definitions; if `status` lacks an optional `tool` field, add it (additive only — no renames). Decision recorded as a code comment in `cmd/mure/emit.go` referencing the frame type used. Binary outcome: either no daemon change, or one additive field.
+- [x] Register `emit` in `cmd/mure/main.go`.
+- [x] Tests:
   - `cmd/mure/emit_test.go`: spawn a unix-socket fake daemon in a goroutine, set `MURE_SOCKET`, invoke each subcommand, assert exact NDJSON bytes received.
   - Negative test: unset `MURE_SOCKET` → non-zero exit + clear error.
 
 ### Verification
-- [ ] `go test ./cmd/mure/... ./internal/daemon/...` green.
-- [ ] `test/emit_e2e.sh`: starts real `mure` daemon, runs `mure emit status working --tool foo`, then `mure ls --json` (or equivalent inspection) shows the status frame. Script asserts via `jq` and exits non-zero on mismatch.
+- [x] `go test ./cmd/mure/... ./internal/daemon/...` green.
+- [x] `test/emit_e2e.sh`: starts real `mure` daemon, runs `mure emit status working --tool foo`, then `mure ls --json` (or equivalent inspection) shows the status frame. Script asserts via `jq` and exits non-zero on mismatch.
 
 ---
 

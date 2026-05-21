@@ -168,16 +168,20 @@ func (s *Server) handle(ctx context.Context, conn net.Conn) {
 }
 
 func (s *Server) handleAgent(ctx context.Context, conn net.Conn, br *bufio.Reader, h sock.Hello) {
-	s.roster.UpsertFromHello(h)
+	if !h.Oneshot {
+		s.roster.UpsertFromHello(h)
+	}
 	for {
 		if ctx.Err() != nil {
 			return
 		}
 		line, err := sock.ReadFrame(br, sock.MaxFrameSize)
 		if err != nil {
-			// Socket dropped without a graceful "bye" — the agent's pane
-			// likely died (e.g. user pressed 'x' / kill-pane). Remove it.
-			s.roster.Remove(h.AgentID)
+			if !h.Oneshot {
+				// Socket dropped without a graceful "bye" — the agent's pane
+				// likely died (e.g. user pressed 'x' / kill-pane). Remove it.
+				s.roster.Remove(h.AgentID)
+			}
 			return
 		}
 		event, _, err := sock.DecodeEnvelope(line)

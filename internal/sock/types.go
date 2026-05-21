@@ -43,6 +43,10 @@ type Hello struct {
 	PID       int    `json:"pid,omitempty"`
 	PiVersion string `json:"pi_version,omitempty"`
 	TS        int64  `json:"ts,omitempty"`
+	// Oneshot indicates a transient hook-style connection (e.g. `mure emit`).
+	// Oneshot agents do not own the lifecycle of their AgentID: the daemon must
+	// not Upsert them on hello and must not Remove them on socket close.
+	Oneshot bool `json:"oneshot,omitempty"`
 }
 
 // Status is an agent → daemon turn-state update.
