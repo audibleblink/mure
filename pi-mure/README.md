@@ -20,7 +20,7 @@ The extension is **inert** unless all three are set in the environment:
 In practice you never set these by hand — `mure spawn` injects them into the
 pane's env. Outside a `mure`-managed pane the extension is a no-op.
 
-Optional inputs: `TMUX_PANE`, `MURE_ROLE`, `MURE_TASK`, `PI_VERSION`.
+Optional inputs: `TMUX_PANE`, `MURE_ROLE`, `MURE_TASK`, `PI_VERSION`, `MURE_BIN`.
 
 ## Install
 
@@ -48,11 +48,42 @@ machine:
 | `session_start` | `status: idle` |
 | `agent_start` | `status: working` (with `task` from `$MURE_TASK`) |
 | `tool_execution_start` | `status: working` (with `tool` name) |
+| `tool_blocked` | `status: blocked` |
 | `agent_end` | `result` (final assistant text) then `status: idle` |
 | `session_shutdown` | `bye`, then disconnect |
 
 On connect the extension always sends a `hello` frame first, then re-emits the
 last known `status` so the daemon can recover state across reconnects.
+
+## Tools
+
+When activated, the extension registers two `pi` tools so a coding agent can
+fan out work to subagents. Both shell out to the `mure` binary (override with
+`MURE_BIN`) and are only available in mure-managed panes — outside that
+environment the extension is inert and registers nothing.
+
+### `mure_spawn`
+
+Start a mure-managed subagent in a new tmux pane.
+
+| Param | Type | Required | Notes |
+|---|---|---|---|
+| `role` | string (min length 1) | yes | Subagent role label. |
+| `task` | string | no | Initial prompt; passed as `$MURE_TASK` and as a positional arg to the agent. |
+
+Returns a JSON string `{"agent_id": "agent-…", "pane_id": "%N"}` parsed from
+the last line of `mure spawn` stdout.
+
+### `mure_wait`
+
+Block until a previously spawned agent emits its final result.
+
+| Param | Type | Required | Notes |
+|---|---|---|---|
+| `agent_id` | string (min length 1) | yes | ID returned by `mure_spawn`. |
+| `timeout_ms` | integer ≥ 1 | no | Defaults to `300_000` (5 min). On timeout the child is `SIGTERM`'d (then `SIGKILL` after 2 s) and the tool returns an error result. |
+
+Returns the agent's result text (trailing newline stripped).
 
 ### Reliability
 

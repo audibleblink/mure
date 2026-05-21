@@ -1,6 +1,8 @@
 # mure
 
-**See what your AI coding agents are doing — inside tmux, where you already work.**
+> **mure** — Japanese 群れ, *"a herd, a flock, a swarm."* 
+
+*See what your AI coding agents are doing — inside tmux, where you already work.*
 
 `mure` is a tmux-native multiplexer for coding-agent panes. It watches every
 agent you spawn and surfaces their live status — *working*, *blocked*,
@@ -8,17 +10,8 @@ agent you spawn and surfaces their live status — *working*, *blocked*,
 the full roster. No web UI, no separate window manager, no new keybindings to
 learn.
 
-> **mure** — Japanese 群れ, *"a herd, a flock, a swarm."*  Because that's what
-> running five agents at once feels like.
 
-```
-┌─ worker · [working] build the parser ───────────────────┐
-│ $ ...                                                   │
-└─────────────────────────────────────────────────────────┘
-┌─ reviewer · [blocked] waiting on tests ─────────────────┐
-│ $ ...                                                   │
-└─────────────────────────────────────────────────────────┘
-```
+![](./docs/header.png)
 
 ## Why
 
@@ -30,6 +23,58 @@ Running several AI agents in parallel is normal now. The options today are:
   plugins, and muscle memory.
 
 mure is the third option: **your tmux, unchanged, plus a daemon that watches.**
+
+## No projects. Just tmux sessions.
+
+Most agent managers (Claude Squad, Conductor, sketch.dev, etc.) ship their
+own notion of a *project*: a named container that owns a working directory,
+an agent roster, layout, and lifecycle. You create projects in their UI,
+switch between them in their UI, and your editor/terminal/tmux setup lives
+separately — or gets swallowed entirely.
+
+mure doesn't have projects. **A tmux session *is* the project.**
+
+- The daemon is scoped per tmux session — one socket at
+  `…/mure/<session>/daemon.sock`, one roster, one sidebar.
+- The working directory is whatever the pane's shell is in. No metadata file,
+  no "project root" registry.
+- Switching projects = `tmux switch-client`. Listing them = `tmux ls`.
+  Persistence = whatever you already use (tmux-resurrect, tmuxinator, a
+  shell function, nothing at all).
+- Tearing down a project = `tmux kill-session`. The daemon goes with it.
+
+If you already organise work as one-tmux-session-per-repo, mure slots in
+without asking you to learn a second hierarchy.
+
+## Where new agent panes land
+
+When something (you, or another agent via `mure_spawn`) spawns an agent,
+mure has to pick *where* the new pane appears. That's controlled by
+`@mure-spawn-target`. The value is either the reserved keyword
+`subagents-window` *(default)* — which triggers find-or-create of a
+dedicated window — or **any tmux command** that creates a pane. mure
+appends `-P -F '#{pane_id}' <agent-command>` and runs it.
+
+The plugin ships these named presets (set them *before* sourcing the
+plugin); they're rewritten to plain tmux commands at load time:
+
+| Preset | Expands to | Behaviour |
+|---|---|---|
+| `subagents-window` *(default)* | — (special) | Find a window tagged `@mure-subagents-window=1` in this session and split it; otherwise create one named `subagents` in the background. Keeps agents out of the window you're working in. |
+| `right-of-active` | `split-window -h` | New column next to the active pane. |
+| `below-active` | `split-window -v` | New row below the active pane. |
+| `new-window` | `new-window` | One agent per window, foregrounded. |
+
+Because the value is just a tmux command, you can write your own:
+
+```tmux
+set -g @mure-spawn-target "split-window -h -f"            # full-height right column
+set -g @mure-spawn-target "split-window -v -f -l 30%"     # bottom strip, 30% tall
+set -g @mure-spawn-target "new-window -t :9"              # pin to window index 9
+```
+
+All behavior definitions live in the plugin (`tmux-mure/tmux-mure.tmux`),
+so users can override or extend them without touching Go.
 
 ## Install
 
@@ -108,8 +153,8 @@ set -g @mure-sidebar-width    36
 set -g @mure-sidebar-position left           # left | right | top | bottom
 set -g @mure-sidebar-key      M              # prefix-key for sidebar toggle
 set -g @mure-spawn-target     subagents-window
-#                             ^ subagents-window | right-of-active
-#                               | below-active   | new-window
+#                             ^ keyword `subagents-window` or any tmux
+#                               pane-creating command (see above)
 
 # per-status colors on the pane border
 set -g @mure-color-working      green

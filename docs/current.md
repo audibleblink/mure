@@ -50,8 +50,15 @@ Unix-socket `server`. Peer-authentication is OS-specific
 
 ### Spawn targets (`cmd/mure/spawn_target.go`)
 
-`@mure-spawn-target` accepts `subagents-window` (default), `right-of-active`,
-`below-active`, `new-window`. Unknown values fall back to `subagents-window`.
+`@mure-spawn-target` accepts the reserved keyword `subagents-window` (default,
+empty string is equivalent) which triggers find-or-create of a dedicated
+`subagents` window — new panes go in via `split-window -h` and a
+`select-layout even-horizontal` PostCreate keeps the columns balanced. Any
+other value is treated as a tmux command template: mure splits on whitespace
+and appends `-P -F '#{pane_id}' <payload>` (e.g. `split-window -h`,
+`new-window`, `split-window -h -f -l 40%`). The legacy keywords
+`right-of-active` / `below-active` / `new-window` are rewritten to command
+templates by the tmux plugin at load time and do not appear in the Go code.
 
 ## Wire Protocol (frame types in `internal/sock/types.go`)
 
