@@ -17,4 +17,4 @@
    working · —                          
 ────────────────────────────────────────
  j/k ↑↓ select  ⏎ focus  c new  i info  
-             x kill  q quit             
+        x kill  t theme  q quit         

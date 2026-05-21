@@ -462,37 +462,6 @@ func TestView_DisconnectedLinePresent(t *testing.T) {
 	}
 }
 
-func TestAdaptiveColorsRespected(t *testing.T) {
-	mk := func(dark bool) Model {
-		m := newWithFrames(nil)
-		m.dark = dark
-		m.applyFrame(Frame{Connect: true})
-		m.applyFrame(Frame{Roster: &sock.Roster{V: 1, Event: "roster", Agents: []sock.AgentSnapshot{
-			{ID: "a", Status: sock.StatusIdle},
-		}}})
-		return m
-	}
-	dark := mk(true).View()
-	light := mk(false).View()
-	if dark == light {
-		t.Fatalf("dark and light renderings are identical; adaptive variant not consulted")
-	}
-	// Logo uses gradientRGB which interpolates between AccentA's chosen
-	// variant and AccentB's — check at least one logo SGR differs.
-	darkSGRs := ansiRE.FindAllString(dark, -1)
-	lightSGRs := ansiRE.FindAllString(light, -1)
-	diff := false
-	for i := 0; i < len(darkSGRs) && i < len(lightSGRs); i++ {
-		if darkSGRs[i] != lightSGRs[i] {
-			diff = true
-			break
-		}
-	}
-	if !diff {
-		t.Fatalf("no SGR sequence differed between dark and light")
-	}
-}
-
 func TestView_LogoCentered(t *testing.T) {
 	m := newWithFrames(nil)
 	m.applyFrame(Frame{Connect: true})
@@ -579,6 +548,60 @@ func TestKey_XKillsSelectedAgentPane(t *testing.T) {
 	}
 	if cmd != nil {
 		t.Errorf("x should not return a tea cmd, got %T", cmd)
+	}
+}
+
+func TestThemePicker_OpenCycleCommit(t *testing.T) {
+	m := newWithFrames(nil)
+	start := m.themeIdx
+
+	// `t` opens picker.
+	res, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'t'}})
+	m = res.(Model)
+	if !m.themePicker {
+		t.Fatal("expected themePicker true after 't'")
+	}
+
+	// `j` moves down and live-applies the next palette.
+	res, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	m = res.(Model)
+	if m.themeIdx != start+1 {
+		t.Fatalf("themeIdx after j: got %d want %d", m.themeIdx, start+1)
+	}
+	if m.palette.Background != Themes[m.themeIdx].Palette.Background {
+		t.Fatal("palette did not live-update on cycle")
+	}
+
+	// Enter commits and closes.
+	res, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = res.(Model)
+	if m.themePicker {
+		t.Fatal("expected themePicker false after enter")
+	}
+	if m.themeIdx != start+1 {
+		t.Fatalf("themeIdx after commit: got %d want %d", m.themeIdx, start+1)
+	}
+}
+
+func TestThemePicker_EscRestores(t *testing.T) {
+	m := newWithFrames(nil)
+	start := m.themeIdx
+
+	res, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'t'}})
+	m = res.(Model)
+	res, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	m = res.(Model)
+	res, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = res.(Model)
+
+	if m.themePicker {
+		t.Fatal("expected themePicker false after esc")
+	}
+	if m.themeIdx != start {
+		t.Fatalf("themeIdx after esc: got %d want %d", m.themeIdx, start)
+	}
+	if m.palette.Background != Themes[start].Palette.Background {
+		t.Fatal("palette not restored after esc")
 	}
 }
 
