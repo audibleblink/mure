@@ -1,0 +1,31 @@
+manifest_version = 1
+name = "claude"
+display = "Claude Code"
+command = "claude"
+# `claude` takes the prompt as a positional argument (see `claude --help`).
+task_arg = "positional"
+
+[capabilities]
+spawn = true
+status = true
+result = true
+subtools = true
+
+[install.skill]
+path = "~/.claude/CLAUDE.md"
+merge = "append"
+
+[[install.hooks]]
+src = "hooks/pre-tool-use.sh"
+dst = "~/.claude/hooks/mure-pre-tool-use.sh"
+mode = "0755"
+
+[[install.hooks]]
+src = "hooks/post-tool-use.sh"
+dst = "~/.claude/hooks/mure-post-tool-use.sh"
+mode = "0755"
+
+[[install.hooks]]
+src = "hooks/stop.sh"
+dst = "~/.claude/hooks/mure-stop.sh"
+mode = "0755"

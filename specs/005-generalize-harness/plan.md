@@ -113,38 +113,38 @@ Add `mure emit` as the canonical NDJSON producer. Daemon wire format is unchange
 Hard cutover. After this phase the only harness-aware Go package is `internal/harnesses`.
 
 ### Tasks
-- [ ] **Pre-implementation verification step** (run first, output captured in PR description):
+- [x] **Pre-implementation verification step** (run first, output captured in PR description):
   - `claude --help` → confirm prompt-passing flag; pin exact `task_arg` value in manifest.
   - `opencode --help` and check opencode docs/repo → confirm instruction-file path and hook event names; pin exact values.
   - If any value differs from the assumptions below, update the manifest before writing hooks.
-- [ ] `harnesses/pi/manifest.toml`: `command="pi"`, `task_arg` matches current pi spawn invocation (read from existing `cmd/mure/spawn.go` pre-deletion), `capabilities` all `true`. `install.skill.path` = pi skills dir (resolve from `pi-mure/README.md`); `install.hooks` enumerates the files below.
-- [ ] `harnesses/pi/skill.md`: instructs the pi agent that `mure spawn` / `mure wait` exist as shell commands. Port relevant content from `pi-mure/README.md`.
-- [ ] `harnesses/pi/hooks/` — port from `pi-mure/index.ts` with this explicit mapping:
+- [x] `harnesses/pi/manifest.toml`: `command="pi"`, `task_arg` matches current pi spawn invocation (read from existing `cmd/mure/spawn.go` pre-deletion), `capabilities` all `true`. `install.skill.path` = pi skills dir (resolve from `pi-mure/README.md`); `install.hooks` enumerates the files below.
+- [x] `harnesses/pi/skill.md`: instructs the pi agent that `mure spawn` / `mure wait` exist as shell commands. Port relevant content from `pi-mure/README.md`.
+- [x] `harnesses/pi/hooks/` — port from `pi-mure/index.ts` with this explicit mapping:
   - `on-tool-start.sh` → `mure emit status working --tool "$TOOL"`
   - `on-tool-end.sh`   → `mure emit status idle`
   - `on-turn-end.sh`   → `mure emit result -` (reads pi's final message on stdin)
   - `on-blocked.sh`    → `mure emit status blocked` (if pi-mure had a blocked signal; omit otherwise — decide during port and note in PR)
-- [ ] `harnesses/claude/manifest.toml`: `command="claude"`, `task_arg="flag:--prompt"` (pinned by verification step above), capabilities all `true`. `install.skill.path="~/.claude/CLAUDE.md"`, `merge="append"`. `install.hooks` enumerates each file below with `dst` under `~/.claude/hooks/`.
-- [ ] `harnesses/claude/skill.md`: teaches the agent to shell out to `mure spawn` / `mure wait`.
-- [ ] `harnesses/claude/hooks/` — file-by-file (Claude Code hook events):
+- [x] `harnesses/claude/manifest.toml`: `command="claude"`, `task_arg="flag:--prompt"` (pinned by verification step above), capabilities all `true`. `install.skill.path="~/.claude/CLAUDE.md"`, `merge="append"`. `install.hooks` enumerates each file below with `dst` under `~/.claude/hooks/`.
+- [x] `harnesses/claude/skill.md`: teaches the agent to shell out to `mure spawn` / `mure wait`.
+- [x] `harnesses/claude/hooks/` — file-by-file (Claude Code hook events):
   - `pre-tool-use.sh`  → `mure emit status working --tool "$CLAUDE_TOOL_NAME"`
   - `post-tool-use.sh` → `mure emit status idle`
   - `stop.sh`          → `mure emit result -` (reads final assistant message from the hook payload via stdin)
-- [ ] `harnesses/opencode/manifest.toml`: `command="opencode"`, `task_arg` and `install.skill.path` pinned by verification step. `merge="append"`. Capabilities all `true` if opencode exposes the equivalent hook events; else set the missing capability to `false` and rely on capture-pane fallback (Phase 4).
-- [ ] `harnesses/opencode/skill.md`: same content as claude's, adapted to opencode's instruction format.
-- [ ] `harnesses/opencode/hooks/` — analogous tool-start / tool-end / turn-end scripts, mapped to opencode's actual event names from the verification step. Each script body is one `mure emit …` call.
-- [ ] Delete `pi-mure/` directory and `internal/piext/` package. Remove their references from `cmd/mure/main.go`, `Makefile`, `go.mod` (if `pi-mure/` had its own module bits), and `README.md`.
+- [x] `harnesses/opencode/manifest.toml`: `command="opencode"`, `task_arg` and `install.skill.path` pinned by verification step. `merge="append"`. Capabilities all `true` if opencode exposes the equivalent hook events; else set the missing capability to `false` and rely on capture-pane fallback (Phase 4).
+- [x] `harnesses/opencode/skill.md`: same content as claude's, adapted to opencode's instruction format.
+- [x] `harnesses/opencode/hooks/` — analogous tool-start / tool-end / turn-end scripts, mapped to opencode's actual event names from the verification step. Each script body is one `mure emit …` call.
+- [x] Delete `pi-mure/` directory and `internal/piext/` package. Remove their references from `cmd/mure/main.go`, `Makefile`, `go.mod` (if `pi-mure/` had its own module bits), and `README.md`.
 
-- [ ] Manifest validation runs in CI: a `go test` in `internal/harnesses` iterates the embedded FS and asserts every shipped manifest decodes strictly.
-- [ ] Update `README.md`:
+- [x] Manifest validation runs in CI: a `go test` in `internal/harnesses` iterates the embedded FS and asserts every shipped manifest decodes strictly.
+- [x] Update `README.md`:
   - Replace any `pi-mure` references.
   - Add "Adding a harness" section (≤1 page): create folder, write manifest, drop hooks, open PR. Reference §6/§7 of PRD.
 
 ### Verification
-- [ ] `go build ./...` succeeds (no orphaned imports from deleted packages).
-- [ ] `go test ./...` green.
-- [ ] `mure integration list` shows exactly `pi`, `claude`, `opencode`.
-- [ ] `test/acceptance.sh` is added to CI (not just runnable locally) and runs every numbered item in PRD §14, exiting 0:
+- [x] `go build ./...` succeeds (no orphaned imports from deleted packages).
+- [x] `go test ./...` green.
+- [x] `mure integration list` shows exactly `pi`, `claude`, `opencode`.
+- [x] `test/acceptance.sh` is added to CI (not just runnable locally) and runs every numbered item in PRD §14, exiting 0:
   - manifests validate
   - list output matches expected
   - install pi → install pi (no-op) → uninstall pi leaves HOME clean

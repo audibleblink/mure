@@ -1,0 +1,35 @@
+manifest_version = 1
+name = "pi"
+display = "pi"
+command = "pi"
+task_arg = "positional"
+
+[capabilities]
+spawn = true
+status = true
+result = true
+subtools = true
+
+[install.skill]
+path = "~/.pi/agent/skills/mure/SKILL.md"
+merge = "replace"
+
+[[install.hooks]]
+src = "hooks/on-tool-start.sh"
+dst = "~/.pi/agent/hooks/mure/on-tool-start.sh"
+mode = "0755"
+
+[[install.hooks]]
+src = "hooks/on-tool-end.sh"
+dst = "~/.pi/agent/hooks/mure/on-tool-end.sh"
+mode = "0755"
+
+[[install.hooks]]
+src = "hooks/on-turn-end.sh"
+dst = "~/.pi/agent/hooks/mure/on-turn-end.sh"
+mode = "0755"
+
+[[install.hooks]]
+src = "hooks/on-blocked.sh"
+dst = "~/.pi/agent/hooks/mure/on-blocked.sh"
+mode = "0755"

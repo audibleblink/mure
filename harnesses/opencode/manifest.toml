@@ -1,0 +1,20 @@
+manifest_version = 1
+name = "opencode"
+display = "opencode"
+command = "opencode"
+# Top-level TUI accepts the initial message via --prompt (see `opencode --help`).
+task_arg = "flag:--prompt"
+
+# opencode's lifecycle events are only reachable via the plugin system
+# (TS/JS modules under ~/.config/opencode/plugins). Until a packaged
+# mure-opencode plugin ships, status/result are best-effort and the daemon
+# falls back to capture-pane sampling (Phase 4 fallback).
+[capabilities]
+spawn = true
+status = false
+result = false
+subtools = true
+
+[install.skill]
+path = "~/.config/opencode/AGENTS.md"
+merge = "append"
