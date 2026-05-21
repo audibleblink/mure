@@ -34,25 +34,25 @@ Stand up `internal/harnesses/` as the single Go package that knows about harness
 Drive `mure integration {install,uninstall,list}` entirely from the registry. The existing pi-specific integration code stays in place until Phase 5; this phase replaces `cmd/mure/integration.go`'s internals with the registry-driven flow but leaves `pi-mure/` untouched.
 
 ### Tasks
-- [ ] `internal/harnesses/plan.go`: `type FileOp { Dst string; Mode fs.FileMode; Content []byte; Merge string }`. `BuildPlan(m Manifest, root fs.FS) ([]FileOp, error)` materializes skill + hooks into FileOps, expanding `~` via `os.UserHomeDir()`.
-- [ ] `internal/harnesses/markers.go`: append-block helpers — `WrapBlock(harness, body)` produces `# >>> mure:<harness> >>>` … `# <<< mure:<harness> <<<`, `ReplaceOrAppendBlock(existing, harness, body)` is pure-string idempotent replace, `StripBlock(existing, harness)` removes it. Unit-tested in isolation.
-- [ ] `internal/harnesses/apply.go`:
+- [x] `internal/harnesses/plan.go`: `type FileOp { Dst string; Mode fs.FileMode; Content []byte; Merge string }`. `BuildPlan(m Manifest, root fs.FS) ([]FileOp, error)` materializes skill + hooks into FileOps, expanding `~` via `os.UserHomeDir()`.
+- [x] `internal/harnesses/markers.go`: append-block helpers — `WrapBlock(harness, body)` produces `# >>> mure:<harness> >>>` … `# <<< mure:<harness> <<<`, `ReplaceOrAppendBlock(existing, harness, body)` is pure-string idempotent replace, `StripBlock(existing, harness)` removes it. Unit-tested in isolation.
+- [x] `internal/harnesses/apply.go`:
   - `Apply(ops []FileOp) (Receipt, error)` writes files with declared modes. `merge="append"` delegates to `markers.ReplaceOrAppendBlock`. `replace` overwrites. `create-if-missing` no-ops if dst exists.
   - `Receipt` records each Dst, its mode, sha256 of written content, and merge mode used.
-- [ ] State file: `internal/harnesses/state.go` reads/writes `$XDG_STATE_HOME/mure/integrations/<name>.json` (fallback `~/.local/state/mure/...` — macOS commonly has XDG vars unset, so fallback path must be unit-tested). Stores last `Receipt`.
-- [ ] `internal/harnesses/uninstall.go`: from receipt, delete `replace`/`create-if-missing` files whose hash still matches the receipt (skip-with-warn otherwise); for `append`, strip the marker block. Idempotent.
-- [ ] Rewrite `cmd/mure/integration.go`:
+- [x] State file: `internal/harnesses/state.go` reads/writes `$XDG_STATE_HOME/mure/integrations/<name>.json` (fallback `~/.local/state/mure/...` — macOS commonly has XDG vars unset, so fallback path must be unit-tested). Stores last `Receipt`.
+- [x] `internal/harnesses/uninstall.go`: from receipt, delete `replace`/`create-if-missing` files whose hash still matches the receipt (skip-with-warn otherwise); for `append`, strip the marker block. Idempotent.
+- [x] Rewrite `cmd/mure/integration.go`:
   - `mure integration list`: table with name, display, installed?, capability matrix; mark `status=false`/`result=false` as `degraded`.
   - `mure integration install <name>`: BuildPlan → Apply → write state. No-op when receipt matches.
   - `mure integration uninstall <name>`: load state → reverse → clear state.
-- [ ] Tests:
+- [x] Tests:
   - `internal/harnesses/apply_test.go`: each merge mode, idempotency (apply twice → identical filesystem), append marker round-trip with surrounding user content preserved.
   - `internal/harnesses/uninstall_test.go`: install→uninstall returns filesystem to original; modified-by-user files in `replace` mode are left and warned.
   - `cmd/mure/integration_test.go` (or extend existing): exec the subcommand against a `t.TempDir()` HOME with a synthetic embed FS via a test-only injection point on the registry (`internal/harnesses.SetFSForTesting`).
 
 ### Verification
-- [ ] `go test ./...` green.
-- [ ] Manual scripted check in CI: `HOME=$(mktemp -d) ./mure integration install _test && ./mure integration list | grep -q _test && ./mure integration install _test && ./mure integration uninstall _test` exits 0 and leaves HOME clean — wrapped as `test/harness_install.sh`.
+- [x] `go test ./...` green.
+- [x] Manual scripted check in CI: `HOME=$(mktemp -d) ./mure integration install _test && ./mure integration list | grep -q _test && ./mure integration install _test && ./mure integration uninstall _test` exits 0 and leaves HOME clean — wrapped as `test/harness_install.sh`.
 
 ---
 
