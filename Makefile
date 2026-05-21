@@ -1,9 +1,6 @@
-.PHONY: sync-piext build test lint verify tmux-test
+.PHONY: build test lint verify tmux-test acceptance
 
-sync-piext:
-	rsync -a --delete --exclude=node_modules --exclude=test --exclude=package-lock.json pi-mure/ internal/piext/assets/
-
-build: sync-piext
+build:
 	go build -o bin/mure ./cmd/mure
 
 test:
@@ -28,4 +25,7 @@ tmux-test:
 		bash tmux-mure/test/hooks_test.sh; \
 	fi
 
-verify: sync-piext build lint test tmux-test
+acceptance: build
+	bash test/acceptance.sh
+
+verify: build lint test tmux-test acceptance

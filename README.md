@@ -1,6 +1,6 @@
 # mure
 
-> **mure** — Japanese 群れ, *"a herd, a flock, a swarm."* 
+> **mure** _mɯ̟́ɾè̞_ — Japanese 群れ, *"a herd, a flock, a swarm."* 
 
 *See what your AI coding agents are doing — inside tmux, where you already work.*
 
@@ -102,12 +102,14 @@ run-shell /absolute/path/to/mure/tmux-mure/tmux-mure.tmux
 
 Reload tmux (`prefix + I` for TPM, or `tmux source-file ~/.tmux.conf`).
 
-If you drive agents with [`pi`](https://github.com/audibleblink/pi), install
-the extension that teaches them to report in:
+Teach a coding-agent harness to report into mure:
 
 ```sh
-mure integration install pi
+mure integration list                  # show available harnesses
+mure integration install pi             # or: claude, opencode
 ```
+
+See [Adding a harness](#adding-a-harness) below to wire up a new one.
 
 Check everything's wired:
 
@@ -134,7 +136,7 @@ See agent state via:
 
 ### Agents that orchestrate other agents
 
-When `mure` drives `pi`, agents get two extra tools:
+When `mure` drives `pi`, agents get two extra tools on harnesses that allow custom tools:
 
 - `mure_spawn` — fan out a sibling agent in a new pane.
 - `mure_wait` — block on its result.
@@ -142,6 +144,8 @@ When `mure` drives `pi`, agents get two extra tools:
 Useful for "planner spawns five workers, waits for all of them" workflows.
 The tools only appear inside mure-managed panes, so they're invisible
 elsewhere.
+
+Mure will use Skills as a fallback
 
 ## Customize
 
@@ -166,19 +170,61 @@ Full list: [`tmux-mure/README.md`](./tmux-mure/README.md).
 | `mure` daemon + CLI | One small Go binary. The only thing you install. |
 | Sidebar TUI | Bubble Tea pane (`mure sidebar`), opens via `prefix + M`. |
 | `tmux-mure` plugin | Pure-shell tmux plugin: hooks, sidebar toggle, spawn-target. |
-| `pi-mure` extension | Optional. Makes `pi` agents report status into the daemon. |
+| Harness manifests | `harnesses/<name>/` ships a manifest + skill + installable files (hooks, plugins) for each supported coding agent (`pi`, `claude`, `opencode`). |
 
 The daemon talks NDJSON over a per-session Unix socket
 (`~/Library/Caches/mure/<session>/daemon.sock` on macOS,
 `$XDG_RUNTIME_DIR/mure/<session>/` on Linux, mode `0700`). Nothing leaves
 your machine.
 
+## Adding a harness
+
+A *harness* is a coding-agent CLI mure knows how to launch and listen to.
+Each one is a directory under [`harnesses/`](./harnesses) with a single
+`manifest.toml`, an optional `SKILL.md` (Agent Skills spec — YAML frontmatter with `name` and `description`), and any files (shell hooks, TS
+plugins, config snippets) the harness needs dropped onto disk.
+
+1. **Create the folder.** `harnesses/<name>/` — `<name>` is what users type
+   in `mure integration install <name>` and `mure spawn --harness <name>`.
+2. **Write `manifest.toml`.** Required keys: `manifest_version`, `name`,
+   `command`, `task_arg` (`positional` | `stdin` | `flag:--xyz` | `none`).
+   Declare `[capabilities]` honestly — `status` and `result` should be
+   `true` only if the harness emits NDJSON frames via a hook script or a
+   plugin (see below). Declaring `status=false` or `result=false` is
+   reserved for a future `tmux capture-pane` fallback that is **not yet
+   implemented**; today such a harness will emit no status or result
+   frames at all. `mure integration list` labels these `degraded`.
+3. **Drop the bridge.** Whatever your harness uses to signal tool/turn
+   lifecycle — shell hooks (claude), a TS plugin (pi, opencode) — each
+   one ultimately produces a `mure emit status …` or `mure emit result -`
+   frame. List the files under `[[install.files]]` with `src` (path
+   inside the harness folder), `dst` (target, `~` expanded), and `mode`.
+   Shell hooks use `0755`; plugins / data files use `0644`.
+
+   Shell hooks must guard against `mure` being absent from the hook's
+   `$PATH` (the harness can be invoked outside a mure session). Prefix
+   each script with `command -v mure >/dev/null 2>&1 || exit 0`.
+4. **Optional skill file.** `SKILL.md` is the instruction blob that
+   teaches the agent that `mure spawn` / `mure wait` exist. It must
+   begin with YAML frontmatter (`name`, `description`) per the Agent
+   Skills spec, and is conventionally installed into a `skills/<name>/`
+   directory. Declare its destination and merge strategy under
+   `[install.skill]` (`append`, `replace`, or `create-if-missing`;
+   `replace` is the right choice for a standalone skill file).
+5. **Test locally.** `make build && ./bin/mure integration install <name>`
+   followed by `mure integration list` and `mure integration uninstall`.
+6. Open a PR. CI validates every manifest under `harnesses/` decodes
+   strictly (`internal/harnesses` test suite).
+
+The full schema lives in [PRD 005 §7](./specs/005-generalize-harness/PRD.md).
+
 ## Development
 
 ```sh
-make build         # sync pi-ext mirror + build ./bin/mure
+make build         # build ./bin/mure
 make test          # go test ./... + shellcheck
 make tmux-test     # real-tmux hook integration test
+make acceptance    # run test/acceptance.sh end-to-end
 make verify        # everything, including lint
 ```
 

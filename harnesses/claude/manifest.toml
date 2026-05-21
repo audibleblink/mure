@@ -1,0 +1,51 @@
+manifest_version = 1
+name = "claude"
+display = "Claude Code"
+# Launch claude with the bundled plugin loaded directly via --plugin-dir.
+# This avoids the marketplace + /plugin install dance: the plugin tree at
+# ~/.claude/plugins/mure/ is sourced in-place, hooks and skill included.
+# Only mure-spawned panes get the plugin; the user's own `claude` sessions
+# are unaffected unless they pass --plugin-dir themselves.
+command = "claude --plugin-dir ~/.claude/plugins/mure"
+task_arg = "positional"
+
+[capabilities]
+spawn = true
+status = true
+result = true
+subtools = true
+
+[[install.files]]
+src = "plugin/.claude-plugin/plugin.json"
+dst = "~/.claude/plugins/mure/.claude-plugin/plugin.json"
+mode = "0644"
+
+[[install.files]]
+src = "plugin/hooks/hooks.json"
+dst = "~/.claude/plugins/mure/hooks/hooks.json"
+mode = "0644"
+
+[[install.files]]
+src = "plugin/skills/mure/SKILL.md"
+dst = "~/.claude/plugins/mure/skills/mure/SKILL.md"
+mode = "0644"
+
+[[install.files]]
+src = "plugin/scripts/user-prompt-submit.sh"
+dst = "~/.claude/plugins/mure/scripts/user-prompt-submit.sh"
+mode = "0755"
+
+[[install.files]]
+src = "plugin/scripts/permission-request.sh"
+dst = "~/.claude/plugins/mure/scripts/permission-request.sh"
+mode = "0755"
+
+[[install.files]]
+src = "plugin/scripts/post-tool-use.sh"
+dst = "~/.claude/plugins/mure/scripts/post-tool-use.sh"
+mode = "0755"
+
+[[install.files]]
+src = "plugin/scripts/stop.sh"
+dst = "~/.claude/plugins/mure/scripts/stop.sh"
+mode = "0755"

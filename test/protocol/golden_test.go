@@ -1,9 +1,5 @@
-// Package protocol_test verifies that the Go encoder and the TS encoder
-// produce byte-identical NDJSON for every fixture frame. The TS side is
-// covered by pi-mure/test/cross.test.ts; this file ensures the Go side
-// also round-trips each fixture, and that both sides share the *same*
-// fixture file (one copy under pi-mure/test/fixtures/, mirrored via
-// `make sync-piext` into internal/piext/assets/).
+// Package protocol_test verifies that the Go encoder produces byte-identical
+// NDJSON for every fixture frame in test/protocol/fixtures/frames.json.
 package protocol_test
 
 import (
@@ -26,7 +22,7 @@ func fixturePath(t *testing.T) string {
 	}
 	dir := wd
 	for i := 0; i < 6; i++ {
-		p := filepath.Join(dir, "pi-mure", "test", "fixtures", "frames.json")
+		p := filepath.Join(dir, "test", "protocol", "fixtures", "frames.json")
 		if _, err := os.Stat(p); err == nil {
 			return p
 		}

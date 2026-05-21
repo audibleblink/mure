@@ -136,35 +136,6 @@ func TestDoctorNoTmuxFails(t *testing.T) {
 	}
 }
 
-func TestIntegrationInstallUninstall(t *testing.T) {
-	dir, err := os.MkdirTemp("/tmp", "mure-pi-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(dir)
-	t.Setenv("PI_CODING_AGENT_DIR", dir)
-
-	exit, _, errs := captureRun(t, []string{"integration", "install", "pi"})
-	if exit != 0 {
-		t.Fatalf("install exit=%d stderr=%s", exit, errs)
-	}
-	want := []string{"package.json", "index.ts"}
-	for _, f := range want {
-		p := filepath.Join(dir, "extensions", "mure", f)
-		if _, err := os.Stat(p); err != nil {
-			t.Fatalf("missing %s: %v", p, err)
-		}
-	}
-
-	exit, _, _ = captureRun(t, []string{"integration", "uninstall", "pi"})
-	if exit != 0 {
-		t.Fatalf("uninstall exit=%d", exit)
-	}
-	if _, err := os.Stat(filepath.Join(dir, "extensions", "mure")); !os.IsNotExist(err) {
-		t.Fatalf("extension dir should be gone: %v", err)
-	}
-}
-
 func TestUnknownVerb(t *testing.T) {
 	exit, _, errs := captureRun(t, []string{"nope"})
 	if exit != 2 {

@@ -18,7 +18,6 @@ func TestParseLineTable(t *testing.T) {
 		{"error", "%error 1700000000 2 0", Event{Kind: EventError, Time: "1700000000", Number: "2", Flags: "0"}},
 		{"window-add", "%window-add @5", Event{Kind: EventWindowAdd, WindowID: "@5"}},
 		{"window-close", "%window-close @5", Event{Kind: EventWindowClose, WindowID: "@5"}},
-		{"pane-died", "%pane-died %41", Event{Kind: EventPaneDied, PaneID: "%41"}},
 		{"session-window-changed", "%session-window-changed $0 @3", Event{Kind: EventSessionWindowChanged, SessionID: "$0", WindowID: "@3"}},
 		{"layout-change", "%layout-change @3 b25d,80x24,0,0,0 1", Event{Kind: EventLayoutChange, WindowID: "@3", Layout: "b25d,80x24,0,0,0 1"}},
 		{"output", "%output %41 hello\\040world", Event{Kind: EventOutput, PaneID: "%41", Output: "hello\\040world"}},
@@ -52,7 +51,7 @@ func TestParseFixtureFile(t *testing.T) {
 	defer f.Close()
 	wantKinds := []EventKind{
 		EventBegin, EventEnd, EventError,
-		EventWindowAdd, EventWindowClose, EventPaneDied,
+		EventWindowAdd, EventWindowClose,
 		EventSessionWindowChanged, EventLayoutChange, EventOutput,
 	}
 	s := bufio.NewScanner(f)

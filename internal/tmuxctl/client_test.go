@@ -92,11 +92,11 @@ func TestRealClient_AsyncEventsRoutedToChannel(t *testing.T) {
 	defer c.Close()
 
 	// Push an event before any command.
-	_, _ = io.WriteString(tmuxOut, "%pane-died %41\n")
+	_, _ = io.WriteString(tmuxOut, "%window-add @5\n")
 
 	select {
 	case ev := <-c.Events():
-		if ev.Kind != EventPaneDied || ev.PaneID != "%41" {
+		if ev.Kind != EventWindowAdd || ev.WindowID != "@5" {
 			t.Fatalf("got %+v", ev)
 		}
 	case <-time.After(time.Second):
@@ -121,5 +121,31 @@ func TestRealClient_AsyncEventsRoutedToChannel(t *testing.T) {
 		}
 	case <-time.After(time.Second):
 		t.Fatal("no window-add event")
+	}
+}
+
+// TestRealClient_PercentPrefixedPayload guards against a regression where
+// payload lines starting with '%' (e.g. pane ids "%42" from
+// `list-panes -F '#{pane_id}'`) were parsed as async control events and
+// dropped, leaving the reply payload empty.
+func TestRealClient_PercentPrefixedPayload(t *testing.T) {
+	stdin, stdout, tmuxIn, tmuxOut := newPipes()
+	c := newClient(nil, stdin, stdout)
+	defer c.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	go func() {
+		_, _ = tmuxIn.ReadString('\n')
+		_, _ = io.WriteString(tmuxOut, "%begin 1 1 0\n%41\n%42\n%end 1 1 0\n")
+	}()
+
+	out, err := c.Run(ctx, "list-panes -aF '#{pane_id}'")
+	if err != nil {
+		t.Fatalf("Run err: %v", err)
+	}
+	if out != "%41\n%42" {
+		t.Fatalf("out = %q, want %q", out, "%41\n%42")
 	}
 }

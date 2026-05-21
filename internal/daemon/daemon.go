@@ -38,7 +38,7 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 
 	if cfg.Tmux != nil {
-		bridge := NewBridge(cfg.Tmux, roster, cfg.Session)
+		bridge := NewBridge(cfg.Tmux, roster, cfg.Session, l)
 		if err := bridge.SetupSession(ctx, cfg.RunDir, cfg.SocketPath); err != nil {
 			l.Printf("setup-session: %v", err)
 			return err
