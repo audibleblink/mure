@@ -12,19 +12,19 @@ Each phase below ends with a fully working, tested chunk of mure. Phases are des
 Stand up `internal/harnesses/` as the single Go package that knows about harnesses. No CLI wiring yet. This phase is pure library code with table tests.
 
 ### Tasks
-- [ ] Create empty `harnesses/` directory at repo root with a `.gitkeep` so `go:embed` has a target. No on-disk test fixtures; Phase 1 tests use `fstest.MapFS` exclusively against the registry's `fs.FS` injection point.
-- [ ] Add dependency `github.com/pelletier/go-toml/v2` to `go.mod`; run `go mod tidy`.
-- [ ] `internal/harnesses/manifest.go`: define `Manifest` struct mirroring §7 schema (Name, Display, Command, TaskArg, Capabilities{Spawn,Status,Result,Subtools}, Install.Skill{Path,Merge}, Install.Hooks[]{Src,Dst,Mode}). Add `ManifestVersion` reserved field. Use strict decode (`toml.Unmarshal` with `DisallowUnknownFields`); unknown keys error.
-- [ ] `internal/harnesses/taskarg.go`: parse `task_arg` strings into a typed value (`Positional|Stdin|Flag{Name}|None`). Invalid strings error.
-- [ ] `internal/harnesses/embed.go`: `//go:embed all:../../harnesses` FS. Export `FS()` accessor.
-- [ ] `internal/harnesses/registry.go`: `Load(fs.FS) ([]Manifest, error)` walks `<name>/manifest.toml`, returns sorted-by-name slice. `Get(name)` helper. Errors aggregate per-harness with manifest path in the message.
-- [ ] `internal/harnesses/manifest_test.go`: table tests covering: valid manifest, unknown key rejected, each `task_arg` variant, invalid `task_arg`, invalid merge mode, missing required fields (name, command).
-- [ ] `internal/harnesses/registry_test.go`: load from an in-memory `fstest.MapFS` with 2 harnesses; assert sort order, Get hit/miss.
+- [x] Create empty `harnesses/` directory at repo root with a `.gitkeep` so `go:embed` has a target. No on-disk test fixtures; Phase 1 tests use `fstest.MapFS` exclusively against the registry's `fs.FS` injection point.
+- [x] Add dependency `github.com/pelletier/go-toml/v2` to `go.mod`; run `go mod tidy`.
+- [x] `internal/harnesses/manifest.go`: define `Manifest` struct mirroring §7 schema (Name, Display, Command, TaskArg, Capabilities{Spawn,Status,Result,Subtools}, Install.Skill{Path,Merge}, Install.Hooks[]{Src,Dst,Mode}). Add `ManifestVersion` reserved field. Use strict decode (`toml.Unmarshal` with `DisallowUnknownFields`); unknown keys error.
+- [x] `internal/harnesses/taskarg.go`: parse `task_arg` strings into a typed value (`Positional|Stdin|Flag{Name}|None`). Invalid strings error.
+- [x] `internal/harnesses/embed.go`: `//go:embed all:../../harnesses` FS. Export `FS()` accessor. (Implemented via sibling `harnesses` package — `go:embed` cannot escape its source dir with `..`.)
+- [x] `internal/harnesses/registry.go`: `Load(fs.FS) ([]Manifest, error)` walks `<name>/manifest.toml`, returns sorted-by-name slice. `Get(name)` helper. Errors aggregate per-harness with manifest path in the message.
+- [x] `internal/harnesses/manifest_test.go`: table tests covering: valid manifest, unknown key rejected, each `task_arg` variant, invalid `task_arg`, invalid merge mode, missing required fields (name, command).
+- [x] `internal/harnesses/registry_test.go`: load from an in-memory `fstest.MapFS` with 2 harnesses; assert sort order, Get hit/miss.
 
 ### Verification (autonomous)
-- [ ] `go build ./...` succeeds.
-- [ ] `go test ./internal/harnesses/...` is green.
-- [ ] `go vet ./...` clean.
+- [x] `go build ./...` succeeds.
+- [x] `go test ./internal/harnesses/...` is green.
+- [x] `go vet ./...` clean.
 
 ---
 
