@@ -44,28 +44,9 @@ if [ -n "$MURE_BIN" ]; then
     "run-shell -b '$MURE_BIN _hook session_closed #{hook_session} || true'"
 fi
 
-# ---- Pane decoration (PRD §11.3) ----
-# SECURITY CONTRACT: the values of @mure-status / @mure-status-color /
-# @mure-task interpolated below are re-expanded by tmux as format strings, so
-# any '#' / '#{' / '#(' / '#[' they contain will be interpreted. The mure
-# daemon MUST sanitize these option values before `tmux set-option` (escape
-# '#' as '##') to prevent format-injection / command execution via `#(...)`.
-# See README.md "Daemon contract" and the daemon's option-writer
-# (internal/daemon/tmuxbridge.go writerLoop), which escapes '#' as '##'
-# before issuing `set-option`.
-tmux set-option -g pane-border-format \
-  '#{?#{@mure-status},#[fg=#{@mure-status-color}]#{@mure-status} #{@mure-task},}'
-
-# ---- Status-line snippet (PRD §11.2) ----
-# We define the format only; the user appends it to status-right manually.
-tmux set-option -g @mure-status-format '#{?#{@mure-status},[#{@mure-status}] ,}'
-
-# ---- Default color options ----
-tmux set-option -g @mure-color-working      "$(tmux_get @mure-color-working      green)"
-tmux set-option -g @mure-color-blocked      "$(tmux_get @mure-color-blocked      yellow)"
-tmux set-option -g @mure-color-errored      "$(tmux_get @mure-color-errored      red)"
-tmux set-option -g @mure-color-disconnected "$(tmux_get @mure-color-disconnected colour244)"
-tmux set-option -g @mure-color-idle         "$(tmux_get @mure-color-idle         colour250)"
+# Agent status is intentionally NOT surfaced via pane-border-format or a
+# status-line snippet. Status is observable only via `mure ls` and the
+# sidebar (which reads from the daemon socket).
 
 # ---- Sidebar + spawn defaults ----
 tmux set-option -g @mure-sidebar-width    "$(tmux_get @mure-sidebar-width    36)"

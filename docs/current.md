@@ -33,7 +33,7 @@ visuals) is built on top.
 | tmux control client | `internal/tmuxctl` | Go | Wraps `tmux -C` for the daemon bridge. |
 | Embedded pi extension | `internal/piext` | Go | `embed.FS` mirror of `pi-mure/` (synced by `make sync-piext`). |
 | pi extension | `pi-mure/` | TypeScript | Emits hello/status/result/bye; registers `mure_spawn` / `mure_wait` tools. |
-| tmux plugin | `tmux-mure/` | shell + tmux | Hooks, pane-border format, sidebar toggle. |
+| tmux plugin | `tmux-mure/` | shell + tmux | Hooks, sidebar toggle, spawn-target. |
 
 ### CLI verbs (`cmd/mure/main.go`)
 
@@ -107,11 +107,11 @@ Linux. Forced `0700`.
 
 ### tmux plugin options (`@mure-*`)
 
-`@mure-sidebar-width=36`, `@mure-sidebar-position=left`, `@mure-sidebar-key=M`,
-`@mure-spawn-target=subagents-window`, plus per-status colors
-(`working=green`, `blocked=yellow`, `errored=red`, `disconnected=colour244`,
-`idle=colour250`), `@mure-status-format`, and the plugin-written
-`@mure-plugin-version=1`.
+`@mure-sidebar-width=36`, `@mure-sidebar-position=left`,
+`@mure-sidebar-key=M`, `@mure-spawn-target=subagents-window`, and the
+plugin-written `@mure-plugin-version=1`. The plugin does **not** set
+`pane-border-format` or any per-status colors — agent state is observable
+via `mure ls` and the sidebar only.
 
 ## Build & Test
 

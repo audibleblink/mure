@@ -217,16 +217,24 @@ func TestEndToEnd(t *testing.T) {
 		return true
 	})
 
-	// Trigger idle→working→idle on each, asserting the @mure-status pane
-	// option reflects the transition within 1s.
+	// Trigger idle→working→idle on each, asserting the roster reflects the
+	// transition within 1s (status is observable only via the socket).
+	agentStatus := func(id string) string {
+		for _, a := range readRoster(t, h).Agents {
+			if a.ID == id {
+				return string(a.Status)
+			}
+		}
+		return ""
+	}
 	for _, a := range agents {
 		signalPaneGroup(t, h, a.paneID, syscall.SIGUSR1)
-		waitFor(t, 1500*time.Millisecond, a.paneID+" @mure-status=working", func() bool {
-			return h.paneStatus(a.paneID) == sock.StatusWorking
+		waitFor(t, 1500*time.Millisecond, a.agentID+" status=working", func() bool {
+			return agentStatus(a.agentID) == string(sock.StatusWorking)
 		})
 		signalPaneGroup(t, h, a.paneID, syscall.SIGUSR2)
-		waitFor(t, 1500*time.Millisecond, a.paneID+" @mure-status=idle", func() bool {
-			return h.paneStatus(a.paneID) == sock.StatusIdle
+		waitFor(t, 1500*time.Millisecond, a.agentID+" status=idle", func() bool {
+			return agentStatus(a.agentID) == string(sock.StatusIdle)
 		})
 	}
 
@@ -252,14 +260,7 @@ func TestEndToEnd(t *testing.T) {
 		return false
 	})
 
-	// Capture one pane's status before `down` to verify retention.
-	retainedPane := agents[0].paneID
-	prevStatus := h.paneStatus(retainedPane)
-	if prevStatus == "" {
-		t.Fatalf("pre-down @mure-status missing for %s", retainedPane)
-	}
-
-	// mure down: socket should disappear; pane options should persist.
+	// mure down: socket should disappear.
 	if out, err := h.mureCmd("down").CombinedOutput(); err != nil {
 		t.Fatalf("mure down: %v: %s", err, out)
 	}
@@ -267,10 +268,6 @@ func TestEndToEnd(t *testing.T) {
 		_, err := os.Stat(h.mureSock)
 		return os.IsNotExist(err)
 	})
-	if got := h.paneStatus(retainedPane); got != prevStatus {
-		t.Fatalf("pane option lost after down: %s @mure-status=%q want %q",
-			retainedPane, got, prevStatus)
-	}
 }
 
 func TestEndToEndSubagentsWindow(t *testing.T) {
@@ -399,14 +396,6 @@ func readRoster(t *testing.T, h *harness) sock.Roster {
 		t.Fatalf("decode roster: %v: %s", err, out)
 	}
 	return r
-}
-
-func (h *harness) paneStatus(paneID string) string {
-	out, err := h.tmux("show-options", "-pv", "-t", paneID, "@mure-status").Output()
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(string(out))
 }
 
 func signalPaneGroup(t *testing.T, h *harness, paneID string, sig syscall.Signal) {
