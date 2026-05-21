@@ -6,9 +6,9 @@
 
 `mure` is a tmux-native multiplexer for coding-agent panes. It watches every
 agent you spawn and surfaces their live status — *working*, *blocked*,
-*errored*, *idle* — right on the pane border, plus an optional sidebar with
-the full roster. No web UI, no separate window manager, no new keybindings to
-learn.
+*errored*, *idle* — visible via an optional sidebar with the full roster. 
+
+No web UI, no separate window manager, no new keybindings to learn.
 
 
 ![](./docs/header.png)
@@ -127,10 +127,10 @@ mure wait <agent>             # block until the agent emits its final result
 mure down                     # stop the daemon
 ```
 
-Agent state shows up two places automatically:
+See agent state via:
 
-- **On the pane border** — color + `[status]` tag next to the title.
-- **In the sidebar** — toggle with `prefix + M`.
+- **`mure ls`** (or `mure ls --json`) — current roster.
+- **The sidebar** — toggle with `prefix + M`.
 
 ### Agents that orchestrate other agents
 
@@ -155,16 +155,9 @@ set -g @mure-sidebar-key      M              # prefix-key for sidebar toggle
 set -g @mure-spawn-target     subagents-window
 #                             ^ keyword `subagents-window` or any tmux
 #                               pane-creating command (see above)
-
-# per-status colors on the pane border
-set -g @mure-color-working      green
-set -g @mure-color-blocked      yellow
-set -g @mure-color-errored      red
-set -g @mure-color-disconnected colour244
-set -g @mure-color-idle         colour250
 ```
 
-Full list and `status-right` snippet: [`tmux-mure/README.md`](./tmux-mure/README.md).
+Full list: [`tmux-mure/README.md`](./tmux-mure/README.md).
 
 ## What's in the box
 
@@ -172,7 +165,7 @@ Full list and `status-right` snippet: [`tmux-mure/README.md`](./tmux-mure/README
 |---|---|
 | `mure` daemon + CLI | One small Go binary. The only thing you install. |
 | Sidebar TUI | Bubble Tea pane (`mure sidebar`), opens via `prefix + M`. |
-| `tmux-mure` plugin | Pure-shell tmux plugin: hooks, border format, sidebar toggle. |
+| `tmux-mure` plugin | Pure-shell tmux plugin: hooks, sidebar toggle, spawn-target. |
 | `pi-mure` extension | Optional. Makes `pi` agents report status into the daemon. |
 
 The daemon talks NDJSON over a per-session Unix socket

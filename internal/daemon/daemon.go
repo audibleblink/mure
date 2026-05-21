@@ -4,20 +4,18 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/audibleblink/mure/internal/tmuxctl"
 )
 
 // Config is the assembly-time configuration for Run.
 type Config struct {
-	Session        string
-	SocketPath     string
-	RunDir         string
-	LaunchDir      string // cwd of the process that ran `mure up`
-	Reader         tmuxctl.Client
-	Writer         tmuxctl.Client
-	CoalesceWindow time.Duration // 0 → DefaultCoalesceWindow
+	Session    string
+	SocketPath string
+	RunDir     string
+	LaunchDir  string // cwd of the process that ran `mure up`
+	Reader     tmuxctl.Client
+	Writer     tmuxctl.Client
 }
 
 // Run wires the daemon's subsystems together: logger, roster, coalescer,
@@ -40,12 +38,6 @@ func Run(ctx context.Context, cfg Config) error {
 	if cfg.LaunchDir != "" {
 		roster.SetLaunchDir(cfg.LaunchDir)
 	}
-	coalWin := cfg.CoalesceWindow
-	if coalWin <= 0 {
-		coalWin = DefaultCoalesceWindow
-	}
-	coal := NewCoalescer(coalWin)
-	defer coal.Close()
 	deb := NewDebouncer(DefaultDebounceWindow,
 		func(id string) { roster.Remove(id) },
 		func(id string) { roster.MarkDisconnected(id, 0) },
@@ -53,7 +45,7 @@ func Run(ctx context.Context, cfg Config) error {
 	defer deb.Stop()
 
 	if cfg.Reader != nil && cfg.Writer != nil {
-		bridge := NewBridge(cfg.Reader, cfg.Writer, roster, coal, deb, cfg.Session)
+		bridge := NewBridge(cfg.Reader, cfg.Writer, roster, deb, cfg.Session)
 		if err := bridge.SetupSession(ctx, cfg.RunDir, cfg.SocketPath); err != nil {
 			l.Printf("setup-session: %v", err)
 			return err

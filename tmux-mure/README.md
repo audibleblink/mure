@@ -5,28 +5,20 @@ config. Owns the tmux-side surfaces only:
 
 - global hooks (`after-select-pane`, `pane-exited`, `session-closed`) that
   fork `mure _hook ...` so the daemon can observe focus/death/teardown,
-- `pane-border-format` that reads `@mure-status` / `@mure-task`,
-- a `@mure-status-format` snippet you append to your own `status-right`,
 - prefix-`M` toggle for the `mure sidebar` pane.
+
+Agent status is intentionally **not** surfaced via tmux options or the
+status line. Status is observable only through `mure ls` and the sidebar
+(which reads from the daemon socket).
 
 The plugin spawns no long-lived processes.
 
 ## Prerequisites
 
-- tmux >= 3.2 (required for `set-hook -gu`, `#{?...}` ternary in
-  `pane-border-format`, and the option-inheritance the daemon relies on).
+- tmux >= 3.2 (required for `set-hook -gu`).
 - The `mure` binary must be on the `PATH` of whatever shell tmux's
   `run-shell` inherits (typically your login shell). All hooks and the
   sidebar toggle short-circuit with a message if `mure` is not found.
-
-## Daemon contract
-
-The `mure` daemon writes the per-pane options `@mure-status`,
-`@mure-status-color`, and `@mure-task`. These values are interpolated into
-`pane-border-format` and are re-expanded by tmux as format strings, so the
-daemon **must** escape `#` as `##` in any value it writes via `tmux
-set-option` to prevent format-injection (e.g. `#(...)` command execution).
-This is the daemon's responsibility; this plugin does not sanitize.
 
 ## Install from a local directory
 
@@ -55,7 +47,7 @@ run '~/.tmux/plugins/tpm/tpm'
 ```
 
 Then `prefix + I` to fetch. See [`example.tmux.conf`](./example.tmux.conf) for
-the recommended `status-right` snippet.
+example overrides.
 
 ## Uninstall
 
@@ -99,12 +91,6 @@ server, then reload your config.
 | `@mure-sidebar-position` | `left` | `left`, `right`, `top`, `bottom`. |
 | `@mure-sidebar-key` | `M` | Prefix-key for sidebar toggle. |
 | `@mure-spawn-target` | `subagents-window` | Read by `mure spawn`. Either the reserved keyword `subagents-window` (find-or-create a dedicated window) or any tmux pane-creating command (e.g. `split-window -h`, `new-window -t :9`). The plugin rewrites legacy keywords `right-of-active`, `below-active`, `new-window` to their command equivalents at load time. mure appends `-P -F '#{pane_id}' <payload>` and runs it. |
-| `@mure-color-working` | `green` | Border fg when agent is working. |
-| `@mure-color-blocked` | `yellow` | Border fg when blocked. |
-| `@mure-color-errored` | `red` | Border fg when errored. |
-| `@mure-color-disconnected` | `colour244` | Border fg when daemon lost the agent. |
-| `@mure-color-idle` | `colour250` | Border fg when idle. |
-| `@mure-status-format` | `#{?#{@mure-status},[#{@mure-status}] ,}` | Snippet to splice into `status-right`. |
 | `@mure-plugin-version` | `1` | Set by the plugin; checked by `mure doctor`. |
 
 Set any of these before TPM's `run` line.

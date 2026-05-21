@@ -55,20 +55,6 @@ for h in after-select-pane pane-exited session-closed; do
     esac
 done
 
-# --- Assert pane-border-format set to mure format ---
-pbf=$(tmux_cmd show-option -gv pane-border-format)
-case "$pbf" in
-    *"@mure-status"*) ;;
-    *) fail "pane-border-format missing @mure-status: $pbf" ;;
-esac
-
-# --- Assert @mure-status-format set ---
-sf=$(tmux_cmd show-option -gv @mure-status-format)
-case "$sf" in
-    *"@mure-status"*) ;;
-    *) fail "@mure-status-format missing @mure-status: $sf" ;;
-esac
-
 # --- Sidebar toggle: create ---
 tmux_cmd run-shell "$PLUGIN_DIR/scripts/sidebar-toggle.sh"
 # Give the new pane a moment to register.
