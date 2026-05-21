@@ -5,7 +5,6 @@ package daemon
 
 import (
 	"sync"
-	"time"
 
 	"github.com/audibleblink/mure/internal/sock"
 )
@@ -162,34 +161,6 @@ func (r *Roster) ApplyResult(res sock.Result) {
 			c.agents[res.AgentID] = a
 		}
 		a.Result = res.Text
-		broadcast(c, a)
-	})
-}
-
-// MarkDisconnected schedules a transition to "disconnected" after `after`.
-// If the agent has been removed or transitioned in the meantime, no-op.
-func (r *Roster) MarkDisconnected(agentID string, after time.Duration) {
-	time.AfterFunc(after, func() {
-		r.submit(func(c *rosterCore) {
-			a, ok := c.agents[agentID]
-			if !ok {
-				return
-			}
-			a.Status = sock.StatusDisconnected
-			broadcast(c, a)
-		})
-	})
-}
-
-// MarkErrored transitions an agent to "errored".
-func (r *Roster) MarkErrored(agentID string) {
-	r.submit(func(c *rosterCore) {
-		a, ok := c.agents[agentID]
-		if !ok {
-			a = &agentState{ID: agentID}
-			c.agents[agentID] = a
-		}
-		a.Status = sock.StatusErrored
 		broadcast(c, a)
 	})
 }

@@ -81,18 +81,6 @@ func TestRosterOverflowClosesSubscriber(t *testing.T) {
 	t.Fatal("subscriber channel was not closed after overflow")
 }
 
-func TestRosterMarkDisconnected(t *testing.T) {
-	r := NewRoster()
-	defer r.Close()
-	r.UpsertFromHello(helloFor("a", "%1"))
-	r.MarkDisconnected("a", 20*time.Millisecond)
-	time.Sleep(80 * time.Millisecond)
-	snap := r.Snapshot()
-	if snap.Agents[0].Status != sock.StatusDisconnected {
-		t.Fatalf("want disconnected, got %q", snap.Agents[0].Status)
-	}
-}
-
 func TestRosterRemove(t *testing.T) {
 	r := NewRoster()
 	defer r.Close()

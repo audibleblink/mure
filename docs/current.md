@@ -38,14 +38,12 @@ visuals) is built on top.
 ### CLI verbs (`cmd/mure/main.go`)
 
 `up`, `down`, `ls [--json]`, `spawn <role> [task]`, `wait <agent>`,
-`focus <agent>`, `sidebar`, `doctor`, `integration {install,uninstall} pi`,
-and internal `_hook`.
+`focus <agent>`, `sidebar`, `doctor`, `integration {install,uninstall} pi`.
 
 ### Daemon subsystems (`internal/daemon/daemon.go`)
 
-`Logger` → `Roster` → `Coalescer` (status-update window) → `Debouncer`
-(disconnect/remove window) → `tmuxbridge` (control-mode reader + writer) →
-Unix-socket `server`. Peer-authentication is OS-specific
+`Logger` → `Roster` → `tmuxbridge` (control-mode client; pane-died →
+roster.Remove) → Unix-socket `server`. Peer-authentication is OS-specific
 (`peerauth_{darwin,linux,other}.go`).
 
 ### Spawn targets (`cmd/mure/spawn_target.go`)
@@ -64,14 +62,11 @@ templates by the tmux plugin at load time and do not appear in the Go code.
 
 | Frame | Direction | Notes |
 |---|---|---|
-| `Hello` | agent/sidebar/cli/hook → daemon | First frame on every connection; `role` field. |
-| `Status` | agent → daemon | `idle`/`working`/`blocked`/`disconnected`/`errored`. |
+| `Hello` | agent/sidebar/cli → daemon | First frame on every connection; `role` field. |
+| `Status` | agent → daemon | `idle`/`working`/`blocked`. |
 | `Bye` | agent → daemon | Clean shutdown. |
 | `Result` | agent → daemon | Final text at `agent_end`. |
-| `Wait` | cli → daemon | Block until agent has result or errors. |
-| `Focus` | hook → daemon, daemon → agent | Pane focus state. |
-| `PaneDied` | hook → daemon | tmux pane exited. |
-| `SessionClosed` | hook → daemon | tmux session ended. |
+| `Wait` | cli → daemon | Block until agent has result. |
 | `Roster` | daemon → sidebar | Full snapshot. |
 | `AgentUpdate` | daemon → sidebar | Single-agent diff (or deletion). |
 | `Envelope` | cli → daemon | Generic control (shutdown, snapshot). |

@@ -30,7 +30,7 @@ export interface StatusFrame {
   v: 1;
   event: "status";
   agent_id: string;
-  status: "idle" | "working" | "blocked" | "disconnected" | "errored";
+  status: "idle" | "working" | "blocked";
   task?: string;
   tool?: string;
   ts: number;
@@ -51,11 +51,17 @@ export interface ByeFrame {
   ts: number;
 }
 
+// Tool names whose `tool_execution_start` should report status=blocked
+// instead of status=working. These are tools that suspend pi awaiting user
+// input (see pi's ctx.ui.custom). Extend as new interactive tools appear.
+const BLOCKING_TOOLS = new Set<string>(["ask_user_question"]);
+
 export type LifecycleEvent =
   | { type: "session_start" }
   | { type: "agent_start"; task?: string }
   | { type: "tool_execution_start"; tool?: string }
-  | { type: "tool_blocked" }
+  | { type: "tool_execution_end"; tool?: string }
+  | { type: "tool_blocked"; tool?: string }
   | { type: "agent_end"; result?: string }
   | { type: "session_shutdown" };
 
@@ -223,8 +229,12 @@ export function start(opts: StartOptions = {}): Handle {
         case "tool_execution_start":
           send({ v: 1, event: "status", agent_id: agentId, status: "working", tool: e.tool, ts: now() });
           break;
+        case "tool_execution_end":
+          // Tool returned; pi is back to plain agent work until the next tool or agent_end.
+          send({ v: 1, event: "status", agent_id: agentId, status: "working", ts: now() });
+          break;
         case "tool_blocked":
-          send({ v: 1, event: "status", agent_id: agentId, status: "blocked", ts: now() });
+          send({ v: 1, event: "status", agent_id: agentId, status: "blocked", tool: e.tool, ts: now() });
           break;
         case "agent_end":
           if (e.result) {
@@ -300,7 +310,14 @@ export default function mureExtension(pi: ExtensionAPI): Handle {
 
   pi.on("session_start", () => emit?.({ type: "session_start" }));
   pi.on("agent_start", () => emit?.({ type: "agent_start", task: process.env.MURE_TASK }));
-  pi.on("tool_execution_start", (event) => emit?.({ type: "tool_execution_start", tool: event.toolName }));
+  pi.on("tool_execution_start", (event) => {
+    if (BLOCKING_TOOLS.has(event.toolName)) {
+      emit?.({ type: "tool_blocked", tool: event.toolName });
+    } else {
+      emit?.({ type: "tool_execution_start", tool: event.toolName });
+    }
+  });
+  pi.on("tool_execution_end", (event) => emit?.({ type: "tool_execution_end", tool: event.toolName }));
   pi.on("agent_end", (event) => emit?.({ type: "agent_end", result: extractFinalText(event?.messages) }));
   pi.on("session_shutdown", () => {
     emit?.({ type: "session_shutdown" });

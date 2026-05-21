@@ -105,7 +105,7 @@ ResultFrame { event: "result", agent_id, text, ts }
 ByeFrame    { event: "bye",    agent_id, ts }
 ```
 
-`status` is one of `idle | working | blocked | disconnected | errored`.
+`status` is one of `idle | working | blocked`.
 
 See `index.ts` for the authoritative TypeScript types.
 

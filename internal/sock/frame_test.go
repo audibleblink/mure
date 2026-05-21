@@ -16,19 +16,10 @@ var goldenAgent = []string{
 	`{"v":1,"event":"bye","agent_id":"agent-3","ts":1731890003000}`,
 }
 
-var goldenHook = []string{
-	`{"v":1,"event":"hello","role":"hook"}`,
-	`{"v":1,"event":"focus","pane_id":"%41","client":"main","ts":1731890004000}`,
-	`{"v":1,"event":"pane_died","pane_id":"%41"}`,
-	`{"v":1,"event":"session_closed","session":"mure-project-x"}`,
-}
-
 var goldenSidebar = []string{
 	`{"v":1,"event":"roster","agents":[{"id":"agent-3","status":"idle","pane":"%43"}]}`,
 	`{"v":1,"event":"agent_update","agent":{"id":"agent-3","status":"idle","task":"…","pane":"%43","last_turn_ended_at":1731890003000}}`,
 }
-
-var goldenAgentFocus = `{"v":1,"event":"focus","focused":true,"ts":1731890004000}`
 
 // jsonEq compares two JSON documents structurally.
 func jsonEq(t *testing.T, a, b string) {
@@ -76,13 +67,8 @@ func TestRoundTripFrames(t *testing.T) {
 		{"hello_agent", goldenAgent[0], &Hello{}},
 		{"status", goldenAgent[1], &Status{}},
 		{"bye", goldenAgent[2], &Bye{}},
-		{"hello_hook", goldenHook[0], &Hello{}},
-		{"focus_hook", goldenHook[1], &Focus{}},
-		{"pane_died", goldenHook[2], &PaneDied{}},
-		{"session_closed", goldenHook[3], &SessionClosed{}},
 		{"roster", goldenSidebar[0], &Roster{}},
 		{"agent_update", goldenSidebar[1], &AgentUpdate{}},
-		{"focus_agent", goldenAgentFocus, &Focus{}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -132,7 +118,7 @@ func TestReadFrameRejectsOversize(t *testing.T) {
 }
 
 func TestDecodeEnvelope(t *testing.T) {
-	for _, g := range append(append(append([]string{}, goldenAgent...), goldenHook...), goldenSidebar...) {
+	for _, g := range append(append([]string{}, goldenAgent...), goldenSidebar...) {
 		ev, ver, err := DecodeEnvelope([]byte(g))
 		if err != nil {
 			t.Fatalf("DecodeEnvelope(%s): %v", g, err)
@@ -158,7 +144,7 @@ func TestDecodeEnvelopeRejectsVersion(t *testing.T) {
 }
 
 func TestValidStatus(t *testing.T) {
-	for _, s := range []string{StatusIdle, StatusWorking, StatusBlocked, StatusDisconnected, StatusErrored} {
+	for _, s := range []string{StatusIdle, StatusWorking, StatusBlocked} {
 		if !ValidStatus(s) {
 			t.Fatalf("ValidStatus(%q) = false", s)
 		}

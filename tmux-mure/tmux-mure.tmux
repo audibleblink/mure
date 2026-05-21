@@ -21,28 +21,10 @@ tmux_get() {
 # Plugin version marker (read by `mure doctor`).
 tmux set-option -g @mure-plugin-version 1
 
-# ---- Hooks (PRD §11.1) ----
-# Unset first so re-sourcing the plugin (config reload) does not duplicate or
-# silently overwrite user-defined hooks layered on top.
-tmux set-hook -gu after-select-pane
-tmux set-hook -gu pane-exited
-tmux set-hook -gu session-closed
-
-# Resolve `mure` once at plugin load; bake the absolute path into hook
-# commands so the hottest tmux events (every pane focus / exit) don't fork a
-# shell just to run `command -v`. If mure isn't on PATH at load time, skip
-# hook installation entirely.
-MURE_BIN="$(command -v mure || true)"
-if [ -n "$MURE_BIN" ]; then
-  tmux set-hook -g after-select-pane \
-    "run-shell -b '$MURE_BIN _hook focus #{pane_id} #{client_name} || true'"
-
-  tmux set-hook -g pane-exited \
-    "run-shell -b '$MURE_BIN _hook pane_died #{pane_id} || true'"
-
-  tmux set-hook -g session-closed \
-    "run-shell -b '$MURE_BIN _hook session_closed #{hook_session} || true'"
-fi
+# Hooks intentionally not installed: pane death is observed directly by the
+# daemon via tmux control-mode (%pane-died). Focus and session-closed events
+# carry no actionable behavior today, so installing those hooks would just
+# fork `mure _hook` on every pane focus for nothing.
 
 # Agent status is intentionally NOT surfaced via pane-border-format or a
 # status-line snippet. Status is observable only via `mure ls` and the

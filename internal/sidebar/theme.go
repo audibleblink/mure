@@ -11,11 +11,9 @@ import (
 type Palette struct {
 	AccentA      lipgloss.AdaptiveColor
 	AccentB      lipgloss.AdaptiveColor
-	Working      lipgloss.AdaptiveColor
-	Blocked      lipgloss.AdaptiveColor
-	Errored      lipgloss.AdaptiveColor
-	Idle         lipgloss.AdaptiveColor
-	Disconnected lipgloss.AdaptiveColor
+	Working lipgloss.AdaptiveColor
+	Blocked lipgloss.AdaptiveColor
+	Idle    lipgloss.AdaptiveColor
 	Dim          lipgloss.AdaptiveColor
 	SelectionBG  lipgloss.AdaptiveColor
 	SelectionFG  lipgloss.AdaptiveColor
@@ -28,11 +26,9 @@ type Palette struct {
 var DefaultPalette = Palette{
 	AccentA:      lipgloss.AdaptiveColor{Light: "#8839ef", Dark: "#cba6f7"},
 	AccentB:      lipgloss.AdaptiveColor{Light: "#ea76cb", Dark: "#f5c2e7"},
-	Working:      lipgloss.AdaptiveColor{Light: "#40a02b", Dark: "#a6e3a1"},
-	Blocked:      lipgloss.AdaptiveColor{Light: "#df8e1d", Dark: "#f9e2af"},
-	Errored:      lipgloss.AdaptiveColor{Light: "#d20f39", Dark: "#f38ba8"},
-	Idle:         lipgloss.AdaptiveColor{Light: "#6c6f85", Dark: "#9399b2"},
-	Disconnected: lipgloss.AdaptiveColor{Light: "#8c8fa1", Dark: "#7f849c"},
+	Working: lipgloss.AdaptiveColor{Light: "#40a02b", Dark: "#a6e3a1"},
+	Blocked: lipgloss.AdaptiveColor{Light: "1", Dark: "1"}, // terminal red (ANSI 1)
+	Idle:    lipgloss.AdaptiveColor{Light: "#6c6f85", Dark: "#9399b2"},
 	Dim:          lipgloss.AdaptiveColor{Light: "#6c6f85", Dark: "#9399b2"},
 	SelectionBG:  lipgloss.AdaptiveColor{Light: "#dce0e8", Dark: "#313244"},
 	SelectionFG:  lipgloss.AdaptiveColor{Light: "#4c4f69", Dark: "#cdd6f4"},
