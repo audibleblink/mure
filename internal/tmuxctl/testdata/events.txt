@@ -3,7 +3,6 @@
 %error 1700000000 2 0
 %window-add @5
 %window-close @5
-%pane-died %41
 %session-window-changed $0 @3
 %layout-change @3 b25d,80x24,0,0,0 1
 %output %41 hello\040world

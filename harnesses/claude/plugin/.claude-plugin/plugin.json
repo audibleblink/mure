@@ -1,0 +1,5 @@
+{
+  "name": "mure",
+  "description": "Bridge Claude Code tool/turn lifecycle to the mure daemon.",
+  "version": "0.1.0"
+}

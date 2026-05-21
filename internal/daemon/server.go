@@ -168,16 +168,25 @@ func (s *Server) handle(ctx context.Context, conn net.Conn) {
 }
 
 func (s *Server) handleAgent(ctx context.Context, conn net.Conn, br *bufio.Reader, h sock.Hello) {
-	s.roster.UpsertFromHello(h)
+	// Oneshot hellos (e.g. `mure emit`) may not own this agent's lifecycle
+	// and may carry a typo'd AgentID, so they update identity only for an
+	// agent that already exists. Non-oneshot hellos create the agent.
+	if h.Oneshot {
+		s.roster.UpdateIdentityIfPresent(h)
+	} else {
+		s.roster.UpsertFromHello(h)
+	}
 	for {
 		if ctx.Err() != nil {
 			return
 		}
 		line, err := sock.ReadFrame(br, sock.MaxFrameSize)
 		if err != nil {
-			// Socket dropped without a graceful "bye" — the agent's pane
-			// likely died (e.g. user pressed 'x' / kill-pane). Remove it.
-			s.roster.Remove(h.AgentID)
+			if !h.Oneshot {
+				// Socket dropped without a graceful "bye" — the agent's pane
+				// likely died (e.g. user pressed 'x' / kill-pane). Remove it.
+				s.roster.Remove(h.AgentID)
+			}
 			return
 		}
 		event, _, err := sock.DecodeEnvelope(line)
@@ -191,12 +200,20 @@ func (s *Server) handleAgent(ctx context.Context, conn net.Conn, br *bufio.Reade
 				return
 			}
 			s.roster.ApplyStatus(st)
+			// ApplyStatus may have created the agent on first contact; re-apply
+			// the hello's identity so PaneID/Role land on the new record.
+			if h.Oneshot {
+				s.roster.UpdateIdentityIfPresent(h)
+			}
 		case "result":
 			var rs sock.Result
 			if err := json.Unmarshal(line, &rs); err != nil {
 				return
 			}
 			s.roster.ApplyResult(rs)
+			if h.Oneshot {
+				s.roster.UpdateIdentityIfPresent(h)
+			}
 		case "bye":
 			s.roster.Remove(h.AgentID)
 			return

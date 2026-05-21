@@ -307,7 +307,6 @@ func TestSpinner_NoTicksWhenNoWorking(t *testing.T) {
 	m.applyFrame(Frame{Roster: &sock.Roster{V: 1, Event: "roster", Agents: []sock.AgentSnapshot{
 		{ID: "a", Status: sock.StatusIdle},
 		{ID: "b", Status: sock.StatusBlocked},
-
 	}}})
 	_ = m.Init()
 	if *called {

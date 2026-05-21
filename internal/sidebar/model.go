@@ -206,7 +206,12 @@ func (m *Model) upsert(a sock.AgentSnapshot) {
 }
 
 func sortAgents(a []sock.AgentSnapshot) {
-	sort.Slice(a, func(i, j int) bool { return a[i].ID < a[j].ID })
+	sort.Slice(a, func(i, j int) bool {
+		if a[i].CreatedAt != a[j].CreatedAt {
+			return a[i].CreatedAt < a[j].CreatedAt
+		}
+		return a[i].ID < a[j].ID
+	})
 }
 
 func (m *Model) clampSelection() {
@@ -645,12 +650,12 @@ func (m Model) layoutDrop(topPad, header, dirLine, countLine, disc, topDiv, agen
 			}
 			var startAgent int
 			agentRows, startAgent = clipAgents(agentRows, m.selected, target, rowsPerAgent)
-			
+
 			if len(detailLines) > 0 {
 				insertAt := (m.selected - startAgent + 1) * rowsPerAgent
 				agentRows = insertDetails(agentRows, detailLines, insertAt)
 			}
-			
+
 			total = len(topPad) + len(header) + len(dirLine) + len(countLine) + len(disc) + len(topDiv) + len(agentRows) + len(botDiv) + len(footer)
 		} else if len(detailLines) > 0 {
 			insertAt := (m.selected + 1) * rowsPerAgent

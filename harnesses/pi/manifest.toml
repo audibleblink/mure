@@ -1,0 +1,23 @@
+manifest_version = 1
+name = "pi"
+display = "pi"
+command = "pi"
+task_arg = "positional"
+
+[capabilities]
+spawn = true
+status = true
+result = true
+subtools = true
+
+[install.skill]
+path = "~/.agents/skills/mure/SKILL.md"
+merge = "replace"
+
+# Status & result are delivered by a pi extension (TS file) that subscribes
+# to tool_execution_start / tool_execution_end / agent_end and writes
+# NDJSON frames directly to $MURE_SOCKET. See extensions/mure.ts.
+[[install.files]]
+src = "extensions/mure.ts"
+dst = "${PI_CODING_AGENT_DIR:-~/.config/pi/agent}/extensions/mure.ts"
+mode = "0644"

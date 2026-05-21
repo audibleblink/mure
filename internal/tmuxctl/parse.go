@@ -13,7 +13,6 @@ const (
 	EventError
 	EventWindowAdd
 	EventWindowClose
-	EventPaneDied
 	EventSessionWindowChanged
 	EventLayoutChange
 	EventOutput
@@ -32,7 +31,7 @@ type Event struct {
 	// %window-add / %window-close / %layout-change / %session-window-changed
 	WindowID string
 
-	// %pane-died / %output
+	// %output
 	PaneID string
 
 	// %session-window-changed
@@ -99,9 +98,6 @@ func ParseLine(line string) (Event, bool) {
 	case "window-close":
 		ev.Kind = EventWindowClose
 		ev.WindowID = firstField(tail)
-	case "pane-died":
-		ev.Kind = EventPaneDied
-		ev.PaneID = firstField(tail)
 	case "session-window-changed":
 		ev.Kind = EventSessionWindowChanged
 		parts := strings.SplitN(tail, " ", 2)

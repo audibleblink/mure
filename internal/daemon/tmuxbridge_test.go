@@ -21,28 +21,34 @@ func waitFor(t *testing.T, d time.Duration, msg string, pred func() bool) {
 	t.Fatalf("timeout waiting for: %s", msg)
 }
 
-func TestBridgePaneDiedRemovesAgent(t *testing.T) {
+// TestBridgePrunesAgentsWithDeadPanes drives the bridge through one
+// reconcile call and verifies that an agent whose pane is missing from
+// the list-panes reply is removed.
+func TestBridgePrunesAgentsWithDeadPanes(t *testing.T) {
 	roster := NewRoster()
 	defer roster.Close()
 	c := tmuxctl.NewScriptedFake()
 	defer c.Close()
 
-	roster.UpsertFromHello(sock.Hello{V: 1, Event: "hello", Role: sock.RoleAgent, AgentID: "a1", PaneID: "%41"})
+	roster.UpsertFromHello(sock.Hello{V: 1, Event: "hello", Role: sock.RoleAgent, AgentID: "alive", PaneID: "%41"})
+	roster.UpsertFromHello(sock.Hello{V: 1, Event: "hello", Role: sock.RoleAgent, AgentID: "dead", PaneID: "%42"})
 
-	b := NewBridge(c, roster, "test")
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go b.Run(ctx)
+	// Reply: only %41 is alive. Format includes the bridge's "p=" prefix.
+	c.EnqueueReply("p=%41\n", nil)
 
-	time.Sleep(20 * time.Millisecond)
-	c.EmitEvent(tmuxctl.Event{Kind: tmuxctl.EventPaneDied, PaneID: "%41"})
+	b := NewBridge(c, roster, "test", nil)
+	b.reconcile(context.Background())
 
-	waitFor(t, time.Second, "a1 removed", func() bool {
+	waitFor(t, time.Second, "dead pruned, alive kept", func() bool {
+		var sawAlive, sawDead bool
 		for _, a := range roster.Snapshot().Agents {
-			if a.ID == "a1" {
-				return false
+			if a.ID == "alive" {
+				sawAlive = true
+			}
+			if a.ID == "dead" {
+				sawDead = true
 			}
 		}
-		return true
+		return sawAlive && !sawDead
 	})
 }

@@ -9,16 +9,16 @@ import (
 
 // Palette holds every adaptive color role used by the sidebar (PRD 002 §6.1).
 type Palette struct {
-	AccentA      lipgloss.AdaptiveColor
-	AccentB      lipgloss.AdaptiveColor
-	Working lipgloss.AdaptiveColor
-	Blocked lipgloss.AdaptiveColor
-	Idle    lipgloss.AdaptiveColor
-	Dim          lipgloss.AdaptiveColor
-	SelectionBG  lipgloss.AdaptiveColor
-	SelectionFG  lipgloss.AdaptiveColor
-	Background   lipgloss.AdaptiveColor
-	Divider      lipgloss.AdaptiveColor
+	AccentA     lipgloss.AdaptiveColor
+	AccentB     lipgloss.AdaptiveColor
+	Working     lipgloss.AdaptiveColor
+	Blocked     lipgloss.AdaptiveColor
+	Idle        lipgloss.AdaptiveColor
+	Dim         lipgloss.AdaptiveColor
+	SelectionBG lipgloss.AdaptiveColor
+	SelectionFG lipgloss.AdaptiveColor
+	Background  lipgloss.AdaptiveColor
+	Divider     lipgloss.AdaptiveColor
 }
 
 // DefaultPalette is the first bundled theme (see themes.go). The sidebar

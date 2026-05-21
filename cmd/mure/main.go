@@ -21,6 +21,7 @@ var verbs = map[string]verbFunc{
 	"sidebar":     cmdSidebar,
 	"doctor":      cmdDoctor,
 	"integration": cmdIntegration,
+	"emit":        cmdEmit,
 }
 
 func main() {
@@ -60,6 +61,9 @@ verbs:
   focus <agent>               select pane for agent
   sidebar                     run sidebar TUI
   doctor                      diagnostics
-  integration install pi      install pi extension
-  integration uninstall pi    uninstall pi extension`)
+  emit status <s> [--tool t]  emit a status frame (hook helper)
+  emit result -               emit a result frame from stdin (hook helper)
+  integration list            list known harnesses
+  integration install <name>  install harness integration
+  integration uninstall <name> uninstall harness integration`)
 }

@@ -5,6 +5,7 @@ package daemon
 
 import (
 	"sync"
+	"time"
 
 	"github.com/audibleblink/mure/internal/sock"
 )
@@ -22,6 +23,7 @@ type agentState struct {
 	PiVersion       string
 	Status          string
 	Task            string
+	CreatedAt       int64
 	LastTurnEndedAt int64
 	Result          string
 }
@@ -33,6 +35,7 @@ func (a *agentState) snapshot() sock.AgentSnapshot {
 		Role:            a.Role,
 		Task:            a.Task,
 		Pane:            a.PaneID,
+		CreatedAt:       a.CreatedAt,
 		LastTurnEndedAt: a.LastTurnEndedAt,
 		Result:          a.Result,
 	}
@@ -118,21 +121,48 @@ func (r *Roster) submitWait(fn func(*rosterCore)) {
 }
 
 // UpsertFromHello records a new or returning agent from a hello frame.
+// Identity fields are only overwritten when the hello carries a non-zero
+// value, so a later hello missing pane_id / pid does not clobber data set
+// by an earlier one.
 func (r *Roster) UpsertFromHello(h sock.Hello) {
 	r.submit(func(c *rosterCore) {
 		a, ok := c.agents[h.AgentID]
 		if !ok {
-			a = &agentState{ID: h.AgentID, Status: sock.StatusIdle}
+			a = &agentState{ID: h.AgentID, Status: sock.StatusIdle, CreatedAt: time.Now().UnixNano()}
 			c.agents[h.AgentID] = a
 		}
-		a.PaneID = h.PaneID
-		a.PID = h.PID
-		a.PiVersion = h.PiVersion
-		if h.AgentRole != "" {
-			a.Role = h.AgentRole
-		}
+		applyHelloIdentity(a, h)
 		broadcast(c, a)
 	})
+}
+
+// UpdateIdentityIfPresent applies a hello's identity fields to an existing
+// agent, but never creates one. Used for oneshot hellos (e.g. `mure emit`)
+// so a typo'd or stale MURE_AGENT_ID can't spawn a phantom roster entry.
+func (r *Roster) UpdateIdentityIfPresent(h sock.Hello) {
+	r.submit(func(c *rosterCore) {
+		a, ok := c.agents[h.AgentID]
+		if !ok {
+			return
+		}
+		applyHelloIdentity(a, h)
+		broadcast(c, a)
+	})
+}
+
+func applyHelloIdentity(a *agentState, h sock.Hello) {
+	if h.PaneID != "" {
+		a.PaneID = h.PaneID
+	}
+	if h.PID != 0 {
+		a.PID = h.PID
+	}
+	if h.PiVersion != "" {
+		a.PiVersion = h.PiVersion
+	}
+	if h.AgentRole != "" {
+		a.Role = h.AgentRole
+	}
 }
 
 // ApplyStatus folds a status frame into the roster.
@@ -140,7 +170,7 @@ func (r *Roster) ApplyStatus(s sock.Status) {
 	r.submit(func(c *rosterCore) {
 		a, ok := c.agents[s.AgentID]
 		if !ok {
-			a = &agentState{ID: s.AgentID}
+			a = &agentState{ID: s.AgentID, CreatedAt: time.Now().UnixNano()}
 			c.agents[s.AgentID] = a
 		}
 		a.Status = s.Status
@@ -157,7 +187,7 @@ func (r *Roster) ApplyResult(res sock.Result) {
 	r.submit(func(c *rosterCore) {
 		a, ok := c.agents[res.AgentID]
 		if !ok {
-			a = &agentState{ID: res.AgentID}
+			a = &agentState{ID: res.AgentID, CreatedAt: time.Now().UnixNano()}
 			c.agents[res.AgentID] = a
 		}
 		a.Result = res.Text

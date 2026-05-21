@@ -1,0 +1,24 @@
+manifest_version = 1
+name = "opencode"
+display = "opencode"
+command = "opencode"
+# Top-level TUI accepts the initial message via --prompt (see `opencode --help`).
+task_arg = "flag:--prompt"
+
+# Status & result are delivered by a local opencode plugin (TS file) that
+# subscribes to tool.execute.before / tool.execute.after / session.idle and
+# writes NDJSON frames directly to $MURE_SOCKET. See plugins/mure.ts.
+[capabilities]
+spawn = true
+status = true
+result = true
+subtools = true
+
+[install.skill]
+path = "~/.agents/skills/mure/SKILL.md"
+merge = "replace"
+
+[[install.files]]
+src  = "plugins/mure.ts"
+dst  = "~/.config/opencode/plugins/mure.ts"
+mode = "0644"

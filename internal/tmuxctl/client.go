@@ -201,7 +201,17 @@ func (c *realClient) readerLoop() {
 
 	for sc.Scan() {
 		line := sc.Text()
-		ev, isCtl := ParseLine(line)
+		// Inside a %begin/%end block tmux only emits payload data, never
+		// async %-notifications. Payload lines that happen to start with
+		// '%' (e.g. pane ids like "%42" from list-panes -F '#{pane_id}')
+		// must not be mistaken for control events.
+		var ev Event
+		var isCtl bool
+		if !inReply {
+			ev, isCtl = ParseLine(line)
+		} else if strings.HasPrefix(line, "%end ") || strings.HasPrefix(line, "%error ") {
+			ev, isCtl = ParseLine(line)
+		}
 		if !isCtl {
 			if inReply {
 				if payload.Len() > 0 {
