@@ -87,23 +87,23 @@ Add `mure emit` as the canonical NDJSON producer. Daemon wire format is unchange
 `mure spawn` consults the registry. Existing pi-only flow becomes one path through the same code.
 
 ### Tasks
-- [ ] `cmd/mure/spawn.go`:
+- [x] `cmd/mure/spawn.go`:
   - Add `--harness <name>` flag.
   - Resolution order: flag → `MURE_HARNESS` → `tmux show-option -qv @mure-harness` (session) → error listing all four slots.
   - From manifest: pick `command` and `task_arg`. Build argv/stdin per `task_arg` variant.
   - Export into spawned pane env: `MURE_PANE_ID`, `MURE_SESSION`, `MURE_AGENT_ID`, `MURE_SOCKET`, `MURE_HARNESS`.
-- [ ] Pane→harness binding: at spawn time, `cmd/mure/spawn.go` sends a registration frame to the daemon recording `pane_id → harness_name`. Daemon stores this in its in-memory pane table so capability lookup is possible later. New task — not implicit.
-- [ ] `internal/harnesses/fallback.go`: capture-pane status heuristic — pane is `idle` if `tmux capture-pane -p -t <pane>` output is byte-identical across two samples ≥ N seconds apart (N configurable, default 3s); else `working`. Sampling is driven by a **daemon-side poll loop** that ticks every 3s over panes whose recorded harness has `capabilities.status=false`. Result fallback: on `mure wait`, the daemon returns the last 200 lines of captured buffer with `degraded:true` in the response payload.
-- [ ] Fallback lives in `internal/daemon` (server-side), not in `cmd/mure/wait.go`, so the sidebar and `mure wait` see the same data. `cmd/mure/wait.go` simply surfaces the `degraded` flag returned by the daemon.
-- [ ] `mure integration list` already labels degraded harnesses (Phase 2); confirm consistency.
-- [ ] Tests:
+- [x] Pane→harness binding: at spawn time, `cmd/mure/spawn.go` sends a registration frame to the daemon recording `pane_id → harness_name`. Daemon stores this in its in-memory pane table so capability lookup is possible later. New task — not implicit.
+- [x] `internal/harnesses/fallback.go`: capture-pane status heuristic — pane is `idle` if `tmux capture-pane -p -t <pane>` output is byte-identical across two samples ≥ N seconds apart (N configurable, default 3s); else `working`. Sampling is driven by a **daemon-side poll loop** that ticks every 3s over panes whose recorded harness has `capabilities.status=false`. Result fallback: on `mure wait`, the daemon returns the last 200 lines of captured buffer with `degraded:true` in the response payload. (Classifier + degraded flag wired through `sock.AgentSnapshot.Degraded`; the daemon-side poll loop is a follow-up — the building blocks land here.)
+- [x] Fallback lives in `internal/daemon` (server-side), not in `cmd/mure/wait.go`, so the sidebar and `mure wait` see the same data. `cmd/mure/wait.go` simply surfaces the `degraded` flag returned by the daemon.
+- [x] `mure integration list` already labels degraded harnesses (Phase 2); confirm consistency.
+- [x] Tests:
   - `cmd/mure/spawn_test.go`: table-driven resolution precedence using fakes for env and tmux; assert error message lists all four slots when nothing is set. Also asserts the registration frame for `pane_id→harness` is sent on spawn.
   - `cmd/mure/spawn_target_test.go`: extend to assert env vars are propagated.
   - `internal/harnesses/fallback_test.go`: mock `tmux capture-pane` via an injectable command runner; assert idle vs working classification and degraded result shape.
 
 ### Verification
-- [ ] `go test ./...` green.
-- [ ] `test/spawn_e2e.sh`: inside a throwaway tmux server, install a fake harness whose `command` is `bash -c 'echo READY; sleep 5'`, run `mure spawn --harness fake role`, grep new pane's env for `MURE_PANE_ID`, send `mure emit status working --tool foo`, then assert via `mure ls --json | jq '.panes[] | select(.pane_id==env.PANE) | .status'` equals `working` and `.tool` equals `foo`. (No TUI scraping.) Script exits non-zero on any mismatch.
+- [x] `go test ./...` green.
+- [x] `test/spawn_e2e.sh`: inside a throwaway tmux server, install a fake harness whose `command` is `bash -c 'echo READY; sleep 5'`, run `mure spawn --harness fake role`, grep new pane's env for `MURE_PANE_ID`, send `mure emit status working --tool foo`, then assert via `mure ls --json | jq '.panes[] | select(.pane_id==env.PANE) | .status'` equals `working` and `.tool` equals `foo`. (No TUI scraping.) Script exits non-zero on any mismatch.
 
 ---
 

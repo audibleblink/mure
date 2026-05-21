@@ -271,6 +271,12 @@ func (s *Server) handleCLI(ctx context.Context, conn net.Conn, br *bufio.Reader,
 			if err := sock.WriteFrame(conn, s.roster.Snapshot()); err != nil {
 				return
 			}
+		case "register_pane":
+			var rp sock.RegisterPane
+			if err := json.Unmarshal(line, &rp); err != nil {
+				return
+			}
+			s.roster.RegisterPane(rp)
 		case "wait":
 			var w sock.Wait
 			if err := json.Unmarshal(line, &w); err != nil {

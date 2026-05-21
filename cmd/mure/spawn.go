@@ -1,26 +1,62 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"flag"
 	"fmt"
+	"net"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/audibleblink/mure/internal/harnesses"
+	"github.com/audibleblink/mure/internal/sock"
 )
 
 func cmdSpawn(ctx context.Context, argv []string, stdout, stderr *os.File) int {
-	if len(argv) < 1 {
-		fmt.Fprintln(stderr, "usage: mure spawn <role> [task]")
+	fs := flag.NewFlagSet("spawn", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	harnessFlag := fs.String("harness", "", "harness name (overrides MURE_HARNESS / @mure-harness)")
+	if err := fs.Parse(argv); err != nil {
 		return 2
 	}
-	role := argv[0]
-	task := strings.Join(argv[1:], " ")
+	rest := fs.Args()
+	if len(rest) < 1 {
+		fmt.Fprintln(stderr, "usage: mure spawn [--harness <name>] <role> [task]")
+		return 2
+	}
+	role := rest[0]
+	task := strings.Join(rest[1:], " ")
 
 	sockPath := resolveSocket()
 	if sockPath == "" {
 		fmt.Fprintln(stderr, "mure spawn: MURE_SOCKET not set")
+		return 1
+	}
+
+	run := tmuxRunnerFromCtx(ctx)
+	harnessName, err := resolveHarness(*harnessFlag, os.Getenv("MURE_HARNESS"), run)
+	if err != nil {
+		fmt.Fprintf(stderr, "mure spawn: %v\n", err)
+		return 1
+	}
+
+	manifests, err := harnesses.Load(harnesses.SourceFS())
+	if err != nil {
+		fmt.Fprintf(stderr, "mure spawn: load harnesses: %v\n", err)
+		return 1
+	}
+	m, ok := harnesses.Get(manifests, harnessName)
+	if !ok {
+		fmt.Fprintf(stderr, "mure spawn: unknown harness %q\n", harnessName)
+		return 1
+	}
+	ta, err := harnesses.ParseTaskArg(m.TaskArg)
+	if err != nil {
+		fmt.Fprintf(stderr, "mure spawn: %v\n", err)
 		return 1
 	}
 
@@ -29,17 +65,20 @@ func cmdSpawn(ctx context.Context, argv []string, stdout, stderr *os.File) int {
 		target = ""
 	}
 
-	agentCmd := os.Getenv("MURE_AGENT_CMD")
-	if agentCmd == "" {
-		agentCmd = "pi"
-	}
 	agentID := newAgentID()
+	session := resolveSession()
+	payload := spawnPayload(spawnEnv{
+		AgentID:     agentID,
+		SockPath:    sockPath,
+		Role:        role,
+		Task:        task,
+		Session:     session,
+		HarnessName: m.Name,
+		Command:     m.Command,
+		TaskArg:     ta,
+	}, os.Environ())
 
-	// Build shell payload: pass through the current environment, then add
-	// mure-specific values for the spawned pane.
-	payload := spawnPayload(agentID, sockPath, role, task, agentCmd, os.Environ())
-
-	plan, err := pickSpawnTarget(tmuxRunnerFromCtx(ctx), target, payload)
+	plan, err := pickSpawnTarget(run, target, payload)
 	if err != nil {
 		fmt.Fprintf(stderr, "mure spawn: %v\n", err)
 		return 1
@@ -65,8 +104,43 @@ func cmdSpawn(ctx context.Context, argv []string, stdout, stderr *os.File) int {
 		fmt.Fprintf(stderr, "mure spawn: %v\n", err)
 		return 1
 	}
+
+	// Register pane → harness binding with the daemon so it can decide whether
+	// to engage the capture-pane fallback later.
+	if err := sendRegisterPane(sockPath, sock.RegisterPane{
+		V:         sock.ProtocolVersion,
+		Event:     "register_pane",
+		PaneID:    paneID,
+		AgentID:   agentID,
+		Harness:   m.Name,
+		StatusCap: m.Capabilities.Status,
+		ResultCap: m.Capabilities.Result,
+	}); err != nil {
+		fmt.Fprintf(stderr, "mure spawn: register pane: %v\n", err)
+		// Non-fatal: the pane is alive; capability tracking is best-effort.
+	}
+
 	fmt.Fprintf(stdout, "%s %s\n", agentID, paneID)
 	return 0
+}
+
+// resolveHarness checks the four configuration slots in order:
+//
+//	--harness flag → MURE_HARNESS env → tmux session @mure-harness → tmux global @mure-harness.
+func resolveHarness(flagVal, envVal string, run tmuxRunner) (string, error) {
+	if flagVal != "" {
+		return flagVal, nil
+	}
+	if envVal != "" {
+		return envVal, nil
+	}
+	if v, err := run("show-option", "-qv", "@mure-harness"); err == nil && v != "" {
+		return v, nil
+	}
+	if v, err := run("show-option", "-gqv", "@mure-harness"); err == nil && v != "" {
+		return v, nil
+	}
+	return "", fmt.Errorf("no harness configured (tried: --harness flag, MURE_HARNESS env, tmux session @mure-harness, tmux global @mure-harness)")
 }
 
 func tmuxRunnerFromCtx(ctx context.Context) tmuxRunner {
@@ -79,14 +153,24 @@ func newAgentID() string {
 	return "agent-" + hex.EncodeToString(b[:])
 }
 
-func spawnPayload(agentID, sockPath, role, task, agentCmd string, environ []string) string {
-	assignments := make([]string, 0, len(environ)+5)
+type spawnEnv struct {
+	AgentID     string
+	SockPath    string
+	Role        string
+	Task        string
+	Session     string
+	HarnessName string
+	Command     string
+	TaskArg     harnesses.TaskArg
+}
+
+func spawnPayload(se spawnEnv, environ []string) string {
+	assignments := make([]string, 0, len(environ)+8)
 	for _, kv := range environ {
 		name, value, ok := strings.Cut(kv, "=")
 		if !ok || name == "" {
 			continue
 		}
-		// Drop TMUX_PANE so the new pane gets its own value from tmux.
 		if name == "TMUX_PANE" {
 			continue
 		}
@@ -94,17 +178,29 @@ func spawnPayload(agentID, sockPath, role, task, agentCmd string, environ []stri
 	}
 	assignments = append(assignments,
 		"MURE_ENV=1",
-		"MURE_AGENT_ID="+shellEscape(agentID),
-		"MURE_SOCKET="+shellEscape(sockPath),
+		"MURE_AGENT_ID="+shellEscape(se.AgentID),
+		"MURE_SOCKET="+shellEscape(se.SockPath),
+		"MURE_HARNESS="+shellEscape(se.HarnessName),
+		// MURE_PANE_ID resolves at shell startup from tmux-provided TMUX_PANE.
+		`MURE_PANE_ID="$TMUX_PANE"`,
 	)
-	if role != "" {
-		assignments = append(assignments, "MURE_ROLE="+shellEscape(role))
+	if se.Session != "" {
+		assignments = append(assignments, "MURE_SESSION="+shellEscape(se.Session))
 	}
-	cmd := agentCmd
-	if task != "" {
-		assignments = append(assignments, "MURE_TASK="+shellEscape(task))
-		// Pass task as a positional argument so pi processes it as the initial prompt.
-		cmd = agentCmd + " " + shellEscape(task)
+	if se.Role != "" {
+		assignments = append(assignments, "MURE_ROLE="+shellEscape(se.Role))
+	}
+	cmd := se.Command
+	if se.Task != "" {
+		assignments = append(assignments, "MURE_TASK="+shellEscape(se.Task))
+		switch se.TaskArg.Kind {
+		case harnesses.TaskArgPositional:
+			cmd = se.Command + " " + shellEscape(se.Task)
+		case harnesses.TaskArgFlag:
+			cmd = se.Command + " " + shellEscape("--"+strings.TrimPrefix(se.TaskArg.Flag, "--")) + " " + shellEscape(se.Task)
+		case harnesses.TaskArgStdin:
+			cmd = fmt.Sprintf("printf %%s %s | %s", shellEscape(se.Task), se.Command)
+		}
 	}
 	inner := fmt.Sprintf("exec env %s %s", strings.Join(assignments, " "), cmd)
 	shell := os.Getenv("SHELL")
@@ -118,4 +214,26 @@ func spawnPayload(agentID, sockPath, role, task, agentCmd string, environ []stri
 // command string handed to tmux.
 func shellEscape(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
+}
+
+// sendRegisterPane opens a short-lived CLI connection to the daemon and emits
+// a single register_pane frame.
+func sendRegisterPane(sockPath string, rp sock.RegisterPane) error {
+	d := net.Dialer{Timeout: time.Second}
+	conn, err := d.Dial("unix", sockPath)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	if err := sock.WriteFrame(conn, sock.Hello{V: sock.ProtocolVersion, Event: "hello", Role: sock.RoleCLI}); err != nil {
+		return err
+	}
+	// Drain initial roster snapshot reply so the server is ready for our frame.
+	br := bufio.NewReader(conn)
+	_ = conn.SetReadDeadline(time.Now().Add(time.Second))
+	if _, err := sock.ReadFrame(br, sock.MaxFrameSize); err != nil {
+		return err
+	}
+	_ = conn.SetReadDeadline(time.Time{})
+	return sock.WriteFrame(conn, rp)
 }
