@@ -50,31 +50,28 @@ without asking you to learn a second hierarchy.
 
 When something (you, or another agent via `mure_spawn`) spawns an agent,
 mure has to pick *where* the new pane appears. That's controlled by
-`@mure-spawn-target`. The value is either the reserved keyword
-`subagents-window` *(default)* — which triggers find-or-create of a
-dedicated window — or **any tmux command** that creates a pane. mure
-appends `-P -F '#{pane_id}' <agent-command>` and runs it.
+`@mure-spawn-target`, set in your `.tmux.conf`. The value is either the
+reserved keyword `subagents-window` *(default)* — which triggers
+find-or-create of a dedicated window — or **any tmux command** that
+creates a pane. mure appends `-P -F '#{pane_id}' <agent-command>` and
+runs it.
 
-The plugin ships these named presets (set them *before* sourcing the
-plugin); they're rewritten to plain tmux commands at load time:
+The default keeps agents out of the window you're working in: mure finds
+a window tagged `@mure-subagents-window=1` in the current session and
+splits it, otherwise creates one named `subagents` in the background.
+Leave `@mure-spawn-target` unset (or set it to `subagents-window`) to
+get this behaviour.
 
-| Preset | Expands to | Behaviour |
-|---|---|---|
-| `subagents-window` *(default)* | — (special) | Find a window tagged `@mure-subagents-window=1` in this session and split it; otherwise create one named `subagents` in the background. Keeps agents out of the window you're working in. |
-| `right-of-active` | `split-window -h` | New column next to the active pane. |
-| `below-active` | `split-window -v` | New row below the active pane. |
-| `new-window` | `new-window` | One agent per window, foregrounded. |
-
-Because the value is just a tmux command, you can write your own:
+For anything else, set it to a tmux pane-creating command:
 
 ```tmux
+set -g @mure-spawn-target "split-window -h"               # new column next to active pane
+set -g @mure-spawn-target "split-window -v"               # new row below active pane
+set -g @mure-spawn-target "new-window"                    # one agent per window, foregrounded
 set -g @mure-spawn-target "split-window -h -f"            # full-height right column
 set -g @mure-spawn-target "split-window -v -f -l 30%"     # bottom strip, 30% tall
 set -g @mure-spawn-target "new-window -t :9"              # pin to window index 9
 ```
-
-All behavior definitions live in the plugin (`tmux-mure/tmux-mure.tmux`),
-so users can override or extend them without touching Go.
 
 ## Install
 
@@ -87,20 +84,13 @@ cd mure
 make build          # → ./bin/mure, then move it onto your $PATH
 ```
 
-Then install the tmux plugin. With [TPM](https://github.com/tmux-plugins/tpm):
+Add a sidebar toggle to your `~/.tmux.conf` (optional, recommended):
 
 ```tmux
-set -g @plugin '<owner>/mure'
-run '~/.tmux/plugins/tpm/tpm'
+bind-key M run-shell "mure sidebar --toggle"
 ```
 
-…or source it directly from a local checkout:
-
-```tmux
-run-shell /absolute/path/to/mure/tmux-mure/tmux-mure.tmux
-```
-
-Reload tmux (`prefix + I` for TPM, or `tmux source-file ~/.tmux.conf`).
+Reload tmux (`tmux source-file ~/.tmux.conf`).
 
 Teach a coding-agent harness to report into mure:
 
@@ -135,7 +125,7 @@ mure down                     # stop the daemon
 See agent state via:
 
 - **`mure ls`** (or `mure ls --json`) — current roster.
-- **The sidebar** — toggle with `prefix + M`.
+- **The sidebar** — `mure sidebar --toggle` (bind to `prefix + M` per Install).
 
 ### Agents that orchestrate other agents
 
@@ -152,27 +142,22 @@ invisible to agents you run outside of mure.
 
 ## Customize
 
-A few tmux options you might care about. Set them **before** the `run-shell` /
-TPM `run` line.
+A few tmux options you might care about, set in your `~/.tmux.conf`:
 
 ```tmux
 set -g @mure-sidebar-width    36
 set -g @mure-sidebar-position left           # left | right | top | bottom
-set -g @mure-sidebar-key      M              # prefix-key for sidebar toggle
 set -g @mure-spawn-target     subagents-window
 #                             ^ keyword `subagents-window` or any tmux
 #                               pane-creating command (see above)
 ```
-
-Full list: [`tmux-mure/README.md`](./tmux-mure/README.md).
 
 ## What's in the box
 
 | Piece | What it does |
 |---|---|
 | `mure` daemon + CLI | One small Go binary. The only thing you install. |
-| Sidebar TUI | Bubble Tea pane (`mure sidebar`), opens via `prefix + M`. |
-| `tmux-mure` plugin | Pure-shell tmux plugin: sidebar toggle, spawn-target normalization. No tmux hooks installed. |
+| Sidebar TUI | Bubble Tea pane (`mure sidebar`), toggled via `mure sidebar --toggle`. |
 | Harness manifests | `harnesses/<name>/` ships a manifest + skill + installable files (hooks, plugins) for each supported coding agent (`pi`, `claude`, `opencode`). |
 
 The daemon talks NDJSON over a per-session Unix socket

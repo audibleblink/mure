@@ -11,16 +11,16 @@ Direct Go deps: `charmbracelet/bubbletea v1.3.10`, `charmbracelet/lipgloss v1.1.
 
 A tmux-native multiplexer for **coding-agent panes**. The platform layer is a
 Unix-socket daemon plus a thin CLI; everything else (a Bubble Tea sidebar,
-harness integrations, a tmux plugin) plugs into the same socket protocol or
-reads the same `@mure-*` pane options. Three deliverables in one monorepo
-meeting at two contracts:
+harness integrations) plugs into the same socket protocol or reads the same
+`@mure-*` tmux options. One binary, two contracts:
 
 1. **NDJSON wire protocol** (`internal/sock`) over a per-session Unix socket.
-2. **`@mure-*` pane options** written by the daemon, read by tmux.
+2. **`@mure-*` tmux options** read (and a few pane-scoped ones written) by
+   `cmd/mure`.
 
-The daemon never edits tmux config; the plugin never spawns long-lived
-processes. Use case layer (agent orchestration via skill files, sidebar
-visuals) is built on top.
+The daemon never edits tmux config beyond pane-scoped marker options. Use
+case layer (agent orchestration via skill files, sidebar visuals) is built
+on top.
 
 ## Architecture
 
@@ -31,7 +31,7 @@ visuals) is built on top.
 | Wire protocol | `internal/sock` | Go | NDJSON frame types + framer; `MaxFrameSize=64 KiB`, `ProtocolVersion=1`. |
 | tmux control client | `internal/tmuxctl` | Go | Wraps `tmux -C` for the daemon bridge. |
 | Harness system | `internal/harnesses`, `harnesses/` | Go + TOML | Manifest-driven install/uninstall for agent integrations. Embedded via `go:embed`. |
-| tmux plugin | `tmux-mure/` | shell + tmux | Sidebar toggle, spawn-target normalization. No hooks installed. |
+
 
 ### CLI verbs (`cmd/mure/main.go`)
 
@@ -53,9 +53,7 @@ empty string is equivalent) which triggers find-or-create of a dedicated
 `select-layout even-horizontal` PostCreate keeps the columns balanced. Any
 other value is treated as a tmux command template: mure splits on whitespace
 and appends `-P -F '#{pane_id}' <payload>` (e.g. `split-window -h`,
-`new-window`, `split-window -h -f -l 40%`). The legacy keywords
-`right-of-active` / `below-active` / `new-window` are rewritten to command
-templates by the tmux plugin at load time and do not appear in the Go code.
+`new-window`, `split-window -h -f -l 40%`).
 
 ## Wire Protocol (frame types in `internal/sock/types.go`)
 
@@ -126,17 +124,18 @@ Runtime dir: `~/Library/Caches/mure/<session>/` on macOS,
 `$XDG_RUNTIME_DIR/mure/<session>/` (fallback `/tmp/mure-<uid>/<session>/`) on
 Linux. Forced `0700`.
 
-### tmux plugin options (`@mure-*`)
+### tmux options (`@mure-*`)
 
-`@mure-sidebar-width=36`, `@mure-sidebar-position=left`,
-`@mure-sidebar-key=M`, `@mure-spawn-target=subagents-window`, and the
-plugin-written `@mure-plugin-version=1`. 
+Read by `cmd/mure` from the user's `~/.tmux.conf`:
+`@mure-sidebar-width` (default `36`), `@mure-sidebar-position` (default
+`left`), `@mure-spawn-target` (default `subagents-window`),
+`@mure-harness` (per-session or global, optional).
 
 ## Build & Test
 
-`make build` (`go build`), `make test` (`go test ./...` + shellcheck),
-`make lint` (`go vet` + gofmt), `make tmux-test` (real tmux integration test,
-skipped if tmux missing), `make verify` (all).
+`make build` (`go build`), `make test` (`go test ./...`), `make lint`
+(`go vet` + gofmt), `make acceptance` (real tmux integration test),
+`make verify` (all).
 
 ### Test counts
 
@@ -160,7 +159,7 @@ under `test/e2e/stubagent/` and is run as part of `go test ./...`.
 - No first-party `TODO`/`FIXME`/`HACK` comments in Go or shell sources.
 - No tagged release yet; README mentions `brew install` once a release is tagged.
 - License is `TBD` in the top-level README.
-- `<owner>` placeholder still in tmux plugin docs and TPM install snippet.
+
 
 ## Linear Progression
 
@@ -172,8 +171,10 @@ let them evolve independently.
 **Choices.** NDJSON over per-session Unix socket; daemon owns roster, plugin
 owns tmux surfaces; neither side mutates the other.
 **Result.** Established `cmd/mure`, `internal/daemon`, `internal/sock`,
-`internal/sidebar`, `internal/tmuxctl`, `pi-mure/`, `tmux-mure/`, and the
-verb set + frame catalog still in use today.
+`internal/sidebar`, `internal/tmuxctl`, `pi-mure/`, and the verb set +
+frame catalog still in use today. The original `tmux-mure/` plugin
+directory has since been removed; its sidebar toggle moved into
+`mure sidebar --toggle`.
 
 ### 002 — sidebar pizzazz (`specs/002-sidebar-pizzazz/`)
 

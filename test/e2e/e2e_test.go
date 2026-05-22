@@ -151,12 +151,6 @@ func TestEndToEnd(t *testing.T) {
 	if out, err := h.tmux("new-session", "-d", "-s", tmuxSession, "-x", "200", "-y", "50", "sh", "-c", "sleep 600").CombinedOutput(); err != nil {
 		t.Fatalf("new-session: %v: %s", err, out)
 	}
-	// Source the plugin so hooks + sidebar key + pane-border-format are set.
-	plugin := filepath.Join(h.repoRoot, "tmux-mure", "tmux-mure.tmux")
-	if out, err := h.tmux("run-shell", plugin).CombinedOutput(); err != nil {
-		t.Fatalf("source plugin: %v: %s", err, out)
-	}
-
 	// mure up (forks daemon).
 	out, err := h.mureCmd("up").CombinedOutput()
 	if err != nil {
@@ -238,16 +232,9 @@ func TestEndToEnd(t *testing.T) {
 		})
 	}
 
-	// Toggle sidebar: invoke the plugin script (equivalent to prefix M).
-	toggle := filepath.Join(h.repoRoot, "tmux-mure", "scripts", "sidebar-toggle.sh")
-	// Invoke via bash directly so script stderr surfaces (tmux run-shell
-	// hides it). The script uses plain `tmux` commands which need to find
-	// our test server; set TMUX env (socket,pid,session-id) so they do.
-	toggleCmd := exec.Command("bash", toggle)
-	toggleCmd.Env = append(append([]string{}, h.mureEnv...),
-		"TMUX="+h.tmuxSock+",0,0")
-	if out, err := toggleCmd.CombinedOutput(); err != nil {
-		t.Fatalf("sidebar-toggle: %v: %s", err, out)
+	// Toggle sidebar via `mure sidebar --toggle`.
+	if out, err := h.mureCmd("sidebar", "--toggle").CombinedOutput(); err != nil {
+		t.Fatalf("sidebar --toggle: %v: %s", err, out)
 	}
 	waitFor(t, 2*time.Second, "sidebar pane present", func() bool {
 		out := h.tmuxOut("list-panes", "-s", "-t", tmuxSession,
@@ -276,11 +263,6 @@ func TestEndToEndSubagentsWindow(t *testing.T) {
 	if out, err := h.tmux("new-session", "-d", "-s", tmuxSession, "-x", "200", "-y", "50", "sh", "-c", "sleep 600").CombinedOutput(); err != nil {
 		t.Fatalf("new-session: %v: %s", err, out)
 	}
-	plugin := filepath.Join(h.repoRoot, "tmux-mure", "tmux-mure.tmux")
-	if out, err := h.tmux("run-shell", plugin).CombinedOutput(); err != nil {
-		t.Fatalf("source plugin: %v: %s", err, out)
-	}
-
 	// Daemon up.
 	if out, err := h.mureCmd("up").CombinedOutput(); err != nil {
 		t.Fatalf("mure up: %v: %s", err, out)

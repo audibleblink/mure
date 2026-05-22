@@ -30,11 +30,6 @@ func cmdUp(ctx context.Context, _ []string, stdout, stderr *os.File) int {
 		}
 	}
 
-	// Plugin presence warning (best-effort).
-	if v, err := tmuxCmd(ctx, "show-option", "-gv", "@mure-plugin-version"); err != nil || v == "" {
-		fmt.Fprintln(stderr, "warning: tmux-mure plugin not detected (set @mure-plugin-version via TPM)")
-	}
-
 	// Resolve tmux server socket + session name from TMUX env so the daemon
 	// can attach as a tmuxctl client.
 	envExtra := []string{"MURE_DAEMON=1"}

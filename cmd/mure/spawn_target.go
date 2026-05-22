@@ -24,10 +24,6 @@ type spawnTargetPlan struct {
 // an arbitrary tmux command template (e.g. "split-window -h",
 // "new-window", "split-window -h -f -l 40%"). For templates, mure appends
 // `-P -F #{pane_id} <payload>` and runs them.
-//
-// Legacy keyword values (right-of-active, below-active, new-window) are
-// rewritten to their command equivalents by the tmux plugin at load time,
-// so they do not appear here.
 func pickSpawnTarget(run tmuxRunner, target string, payload string) (spawnTargetPlan, error) {
 	if target == "" || target == "subagents-window" {
 		return planSubagentsWindow(run, payload)

@@ -28,13 +28,6 @@ func cmdDoctor(ctx context.Context, _ []string, stdout, stderr *os.File) int {
 		fmt.Fprintf(stdout, "OK   tmux: %s\n", out)
 	}
 
-	// plugin presence
-	if v, err := tmuxCmd(ctx, "show-option", "-gv", "@mure-plugin-version"); err != nil || v == "" {
-		fmt.Fprintln(stdout, "WARN tmux-mure plugin: not installed; add `set -g @plugin 'alex/mure'` and reload tmux")
-	} else {
-		fmt.Fprintf(stdout, "OK   tmux-mure plugin: v%s\n", v)
-	}
-
 	// socket path writable
 	sockPath := resolveSocket()
 	if sockPath == "" {

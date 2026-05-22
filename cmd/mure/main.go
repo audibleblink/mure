@@ -59,7 +59,7 @@ verbs:
   spawn <role> [task]         spawn an agent pane
   wait <agent>                wait for agent's final result
   focus <agent>               select pane for agent
-  sidebar                     run sidebar TUI
+  sidebar [--toggle]          run (or toggle) sidebar TUI pane
   doctor                      diagnostics
   emit status <s> [--tool t]  emit a status frame (hook helper)
   emit result -               emit a result frame from stdin (hook helper)
