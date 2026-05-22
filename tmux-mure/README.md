@@ -64,9 +64,6 @@ example overrides.
 1. Remove the `run-shell /path/to/tmux-mure/tmux-mure.tmux` line.
 2. `tmux source-file ~/.tmux.conf`. Delete the checkout if no longer needed.
 
-If you previously ran a hooks-installing version of the plugin, also run
-`scripts/uninstall-hooks.sh` once to clear the global hooks from the
-running server.
 
 ## Options
 

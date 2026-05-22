@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# tmux-mure: tmux-side surfaces for mure (hooks, decoration, sidebar).
-# Owns: hooks, status-line snippet, pane decoration, sidebar toggle, spawn-target.
+# tmux-mure: tmux-side surfaces for mure.
+# Owns: sidebar toggle, spawn-target normalization.
 # Spawns no processes of its own.
 
 set -eu

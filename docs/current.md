@@ -1,26 +1,25 @@
 # mure — Current State
 
-Go ≥ 1.24 (toolchain 1.24.5). tmux ≥ 3.2 (README says 3.3 for build prereq;
-plugin README states 3.2 for the hook/format features it uses).
-No tagged release yet; `pi-mure` package version `0.0.0`.
+Go ≥ 1.24 (toolchain 1.24.5). tmux ≥ 3.2.
+Module: `github.com/audibleblink/mure`. No tagged release yet.
 
 Direct Go deps: `charmbracelet/bubbletea v1.3.10`, `charmbracelet/lipgloss v1.1.0`,
-`golang.org/x/sys v0.36.0`. Node deps (dev only): `tsx`, `typebox`, `typescript`,
-`@types/node`; peer/runtime API from `@earendil-works/pi-coding-agent`.
+`muesli/termenv v0.16.0`, `golang.org/x/sys v0.36.0`,
+`pelletier/go-toml/v2 v2.3.1`.
 
 ## What mure Is
 
 A tmux-native multiplexer for **coding-agent panes**. The platform layer is a
-Unix-socket daemon plus a thin CLI; everything else (a Bubble Tea sidebar, a pi
-extension, a tmux plugin) plugs into the same socket protocol or reads the same
-`@mure-*` pane options. Three deliverables in one monorepo meeting at two
-contracts:
+Unix-socket daemon plus a thin CLI; everything else (a Bubble Tea sidebar,
+harness integrations, a tmux plugin) plugs into the same socket protocol or
+reads the same `@mure-*` pane options. Three deliverables in one monorepo
+meeting at two contracts:
 
 1. **NDJSON wire protocol** (`internal/sock`) over a per-session Unix socket.
 2. **`@mure-*` pane options** written by the daemon, read by tmux.
 
 The daemon never edits tmux config; the plugin never spawns long-lived
-processes. Use case layer (agent orchestration via `pi-mure` tools, sidebar
+processes. Use case layer (agent orchestration via skill files, sidebar
 visuals) is built on top.
 
 ## Architecture
@@ -31,14 +30,14 @@ visuals) is built on top.
 | Sidebar TUI | `internal/sidebar` | Go (Bubble Tea) | `mure sidebar` pane — subscribes to roster diffs. |
 | Wire protocol | `internal/sock` | Go | NDJSON frame types + framer; `MaxFrameSize=64 KiB`, `ProtocolVersion=1`. |
 | tmux control client | `internal/tmuxctl` | Go | Wraps `tmux -C` for the daemon bridge. |
-| Embedded pi extension | `internal/piext` | Go | `embed.FS` mirror of `pi-mure/` (synced by `make sync-piext`). |
-| pi extension | `pi-mure/` | TypeScript | Emits hello/status/result/bye; registers `mure_spawn` / `mure_wait` tools. |
-| tmux plugin | `tmux-mure/` | shell + tmux | Hooks, sidebar toggle, spawn-target. |
+| Harness system | `internal/harnesses`, `harnesses/` | Go + TOML | Manifest-driven install/uninstall for agent integrations. Embedded via `go:embed`. |
+| tmux plugin | `tmux-mure/` | shell + tmux | Sidebar toggle, spawn-target normalization. No hooks installed. |
 
 ### CLI verbs (`cmd/mure/main.go`)
 
 `up`, `down`, `ls [--json]`, `spawn <role> [task]`, `wait <agent>`,
-`focus <agent>`, `sidebar`, `doctor`, `integration {install,uninstall} pi`.
+`focus <agent>`, `sidebar`, `emit`, `doctor`,
+`integration {list,install,uninstall} <name>`.
 
 ### Daemon subsystems (`internal/daemon/daemon.go`)
 
@@ -62,27 +61,54 @@ templates by the tmux plugin at load time and do not appear in the Go code.
 
 | Frame | Direction | Notes |
 |---|---|---|
-| `Hello` | agent/sidebar/cli → daemon | First frame on every connection; `role` field. |
+| `Hello` | agent/sidebar/cli → daemon | First frame on every connection; `role` field. `Oneshot: true` skips lifecycle tracking (used by `mure emit`). |
 | `Status` | agent → daemon | `idle`/`working`/`blocked`. |
 | `Bye` | agent → daemon | Clean shutdown. |
-| `Result` | agent → daemon | Final text at `agent_end`. |
+| `Result` | agent → daemon | Final text at agent turn end. |
 | `Wait` | cli → daemon | Block until agent has result. |
 | `Roster` | daemon → sidebar | Full snapshot. |
 | `AgentUpdate` | daemon → sidebar | Single-agent diff (or deletion). |
 | `Envelope` | cli → daemon | Generic control (shutdown, snapshot). |
 
-## pi-mure Tools
+## Harnesses (`harnesses/`, `internal/harnesses/`)
 
-Registered only when `MURE_ENV=1` and `MURE_AGENT_ID` are set:
+Each harness is a directory under `harnesses/<name>/` containing a
+`manifest.toml`, optional hook scripts / TS plugins, and a `SKILL.md`.
+The entire tree is embedded into the binary via `go:embed`.
 
-| Tool | Wraps | Purpose |
+Three harnesses ship in-tree:
+
+| Harness | Hook mechanism | Skill delivery |
 |---|---|---|
-| `mure_spawn` | `mure spawn` | Fan out a sibling agent in a new pane. |
-| `mure_wait` | `mure wait` | Block on a sibling's final result. |
+| `claude` | Shell-script Claude Code plugin hooks (`UserPromptSubmit`, `PostToolUse`, `PermissionRequest`, `Stop`) | `[[install.files]]` into `~/.claude/plugins/mure/` |
+| `opencode` | TypeScript opencode plugin (`tool.execute.before/after`, `session.idle`, `permission.*`) | `[install.skill]` |
+| `pi` | TypeScript pi extension (`before_agent_start`, `tool_execution_end`, `agent_end`) | `[install.skill]` |
+
+**Manifest fields:** `manifest_version`, `name`, `display`, `command`,
+`task_arg` (`positional|stdin|flag:<name>|none`), `[capabilities]`
+(`spawn`, `status`, `result`, `subtools`), `[install.skill]` (optional),
+`[[install.files]]` list.
+
+**Merge strategies:** `replace`, `create-if-missing`, `append` (idempotent
+marker-block wrapping `# >>> mure:<name> >>>`).
+
+**`mure emit`** — thin CLI used by shell-script hooks to write a single
+oneshot NDJSON frame to the daemon without holding a lifecycle connection.
+
+## Agent Orchestration (Skills)
+
+Harnesses with `subtools = true` install a `SKILL.md` that teaches the
+agent to use two shell commands:
+
+- `mure spawn <role> [task]` — fan out a sibling agent in a new pane.
+- `mure wait <agent_id>` — block until that agent emits its final result.
+
+The skill is only present inside mure-managed panes; agents running outside
+mure never see it.
 
 ## Configuration
 
-### Environment variables (from README + grep of `os.Getenv`)
+### Environment variables
 
 | Var | Default | Purpose |
 |---|---|---|
@@ -93,8 +119,8 @@ Registered only when `MURE_ENV=1` and `MURE_AGENT_ID` are set:
 | `MURE_AGENT_ID` | — | Set by `mure spawn` inside agent pane. |
 | `MURE_AGENT_CMD` | — | Command `mure spawn` exec's as the agent. |
 | `MURE_TASK` | — | Initial task label. |
-| `MURE_ENV` | — | Comma-separated extra env into spawned panes; also gates pi-mure tool registration. |
-| `MURE_DAEMON` | unset | Internal — set on the forked daemon. |
+| `MURE_ENV` | — | Comma-separated extra env into spawned panes. |
+| `MURE_DAEMON` | unset | Internal — set on the forked daemon process. |
 
 Runtime dir: `~/Library/Caches/mure/<session>/` on macOS,
 `$XDG_RUNTIME_DIR/mure/<session>/` (fallback `/tmp/mure-<uid>/<session>/`) on
@@ -104,50 +130,37 @@ Linux. Forced `0700`.
 
 `@mure-sidebar-width=36`, `@mure-sidebar-position=left`,
 `@mure-sidebar-key=M`, `@mure-spawn-target=subagents-window`, and the
-plugin-written `@mure-plugin-version=1`. The plugin does **not** set
-`pane-border-format` or any per-status colors — agent state is observable
-via `mure ls` and the sidebar only.
+plugin-written `@mure-plugin-version=1`. 
 
 ## Build & Test
 
-`make build` (sync-piext + `go build`), `make test` (`go test ./...` +
-shellcheck), `make lint` (`go vet` + gofmt), `make tmux-test` (real tmux hook
-test, skipped if tmux missing), `make verify` (all).
+`make build` (`go build`), `make test` (`go test ./...` + shellcheck),
+`make lint` (`go vet` + gofmt), `make tmux-test` (real tmux integration test,
+skipped if tmux missing), `make verify` (all).
 
 ### Test counts
 
 | Package | Tests | Status |
 |---|---:|---|
-| `cmd/mure` | 22 | ok |
-| `internal/daemon` | 24 | ok |
-| `internal/sidebar` | 26 | ok |
+| `cmd/mure` | 25 | ok |
+| `internal/daemon` | 19 | ok |
+| `internal/harnesses` | 21 | ok |
+| `internal/sidebar` | 27 | ok |
 | `internal/sock` | 6 | ok |
-| `internal/tmuxctl` | 6 | ok |
+| `internal/tmuxctl` | 7 | ok |
 | `test/protocol` | 1 | ok |
-| **Go total** | **85** | all passing |
-| `pi-mure` (node --test) | 23 | all passing |
+| **Go total** | **106** | all passing |
 
 Additional standalone Go tests live in `test/e2e/e2e_test.go` and
 `test/throughput/throughput_test.go`; the e2e suite has a `stubagent` helper
-under `test/e2e/stubagent/` and is run as part of `go test ./...` when its
-build tags / environment allow.
-
-## Skills / Knowledge / Models
-
-N/A — this is a Go/TS infrastructure project, not an LLM platform. No
-embedded knowledge bases, schemas (beyond wire frames above), or skill
-loaders. The only "skill"-like assets are `pi-mure/` mirrored into
-`internal/piext/assets/` for embedded install via `mure integration install pi`.
+under `test/e2e/stubagent/` and is run as part of `go test ./...`.
 
 ## Known Issues / Tech Debt
 
-- No first-party `TODO`/`FIXME`/`HACK` comments in Go, TS, or shell sources.
-- No tagged release yet (`pi-mure/package.json` is at `0.0.0`; README mentions
-  `brew install` once a release is tagged).
+- No first-party `TODO`/`FIXME`/`HACK` comments in Go or shell sources.
+- No tagged release yet; README mentions `brew install` once a release is tagged.
 - License is `TBD` in the top-level README.
-- `<owner>` placeholder still in README install snippets and tmux plugin docs.
-- `make sync-piext` is a manual step CI checks for drift; easy to forget when
-  editing `pi-mure/`.
+- `<owner>` placeholder still in tmux plugin docs and TPM install snippet.
 
 ## Linear Progression
 
@@ -193,13 +206,28 @@ plugin-runtime changes (option-value docs only).
 **Result.** `cmd/mure/spawn_target.go` + `spawn_target_test.go`; lazy
 `subagents` window creation in `cmd/mure/spawn.go`.
 
+### 005 — generalize harness support (`specs/005-generalize-harness/`)
+
+**Goal.** Decouple mure from the `pi` harness; ship first-class support for
+`pi`, `claude`, and `opencode`; make adding a new harness a documentation-only
+PR (a folder under `harnesses/<name>/`).
+**Choices.** TOML manifest per harness; `go:embed` over the entire
+`harnesses/` tree; `mure emit` CLI for shell-hook–based harnesses; skill files
+replace `pi.registerTool(...)` for orchestration; `pi-mure/` and
+`internal/piext` removed.
+**Result.** `internal/harnesses/`, `harnesses/{claude,opencode,pi}/`,
+`cmd/mure/integration.go`, `cmd/mure/emit.go`; three reference harnesses
+each emitting status/result frames and installing a skill for `mure spawn` /
+`mure wait`.
+
 ### The Arc
 
 001 set the rule (two contracts, three pieces, nobody crosses lines).
 002 polished the only user-facing TUI surface within its lane.
-003 turned the daemon into a fan-out primitive by giving agents tools, still
-without touching the wire.
-004 made the multi-agent UX livable by quarantining subagent panes — and
-proved the seam from 001 was real, because it stayed inside `cmd/mure`.
+003 turned the daemon into a fan-out primitive by giving pi agents tools.
+004 made the multi-agent UX livable by quarantining subagent panes.
+005 generalized the harness layer — any agent runtime can integrate without
+touching Go, and orchestration works via installed skills rather than
+registered tools.
 
 Each spec stays in exactly one layer. That is the project's discipline.
